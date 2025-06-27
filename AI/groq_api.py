@@ -8,51 +8,77 @@ from duckduckgo_search import DDGS
 import datetime
 import re
 
-# Import existing memory functions
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-memory_path = os.path.join(root_dir, "memory")
+# Fix import paths - Add current directory and parent directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+ai_dir = os.path.join(parent_dir, "AI") if "AI" not in current_dir else current_dir
+
+# Add paths to sys.path if not already there
+for path in [current_dir, parent_dir, ai_dir]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+# Import memory functions first
+memory_path = os.path.join(parent_dir, "memory")
 if memory_path not in sys.path:
     sys.path.append(memory_path)
 
-# Import existing memory functions
-from memory import (
-    load_memory, save_memory, prune_memory, append_to_memory,
-    load_summaries, clear_user_memory, get_user_preference, set_user_preference,
-    summarize_with_groq, load_real_time_memory, save_real_time_memory
-)
-
-# SOLUTION 1: Add current directory to Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
-
 try:
-    # SOLUTION 2: Try different import approaches
-    try:
-        from personality_profiler import (
-            update_user_personality, get_personality_system_prompt, get_user_personality_stats
-        )
-        PERSONALITY_AVAILABLE = True
-        print("SUCCESS: personality_profiler imported successfully")
-    except ImportError:
-        # Try importing as a module from current directory
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            "personality_profiler", 
-            os.path.join(current_dir, "personality_profiler.py")
-        )
-        if spec and spec.loader:
-            personality_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(personality_module)
-            
-            update_user_personality = personality_module.update_user_personality
-            get_personality_system_prompt = personality_module.get_personality_system_prompt
-            get_user_personality_stats = personality_module.get_user_personality_stats
-            PERSONALITY_AVAILABLE = True
-            print("SUCCESS: personality_profiler imported via importlib")
-        else:
-            raise ImportError("Could not load personality_profiler module")
-            
+    from memory import (
+        load_memory, save_memory, prune_memory, append_to_memory,
+        load_summaries, clear_user_memory, get_user_preference, set_user_preference,
+        summarize_with_groq, load_real_time_memory, save_real_time_memory
+    )
+    MEMORY_AVAILABLE = True
+    print("SUCCESS: Memory module imported successfully")
+except ImportError as e:
+    print(f"ERROR: Could not import memory module: {e}")
+    MEMORY_AVAILABLE = False
+    # Create dummy functions to prevent crashes
+    def load_memory(user_email): return []
+    def save_memory(memory, user_email): pass
+    def prune_memory(user_email): pass
+    def append_to_memory(user_msg, ai_msg, user_email): pass
+    def load_summaries(user_email): return []
+    def clear_user_memory(user_email): return True
+    def get_user_preference(key, user_email): return None
+    def set_user_preference(key, value, user_email): pass
+    def summarize_with_groq(messages, instruction=""): return {"message": "Summary not available"}
+    def load_real_time_memory(user_email): return []
+    def save_real_time_memory(entry, user_email): pass
+
+# Try to import intelligent_search_detector
+try:
+    from intelligent_search_detector import IntelligentSearchDetector, integrate_with_groq_api
+    search_detector = IntelligentSearchDetector()
+    SEARCH_DETECTOR_AVAILABLE = True
+    print("SUCCESS: intelligent_search_detector imported successfully")
+except ImportError as e:
+    print(f"WARNING: Could not import intelligent_search_detector: {e}")
+    SEARCH_DETECTOR_AVAILABLE = False
+    
+    # Create a basic fallback search detector
+    class BasicSearchDetector:
+        def should_search(self, prompt, user_context=None):
+            # Basic search detection - look for explicit search terms
+            search_terms = ['search for', 'look up', 'find information', 'what is happening', 'current', 'news', 'latest']
+            lower_prompt = prompt.lower()
+            should_search = any(term in lower_prompt for term in search_terms)
+            return should_search, "basic_detection", {"query": prompt.strip()}
+    
+    search_detector = BasicSearchDetector()
+    
+    def integrate_with_groq_api(prompt, user_email, detector, load_memory_func, get_user_preference_func):
+        should_search, reason, info = detector.should_search(prompt)
+        return should_search, reason, info
+
+# Try to import personality profiler
+try:
+    from personality_profiler import (
+        update_user_personality, get_personality_system_prompt, get_user_personality_stats
+    )
+    PERSONALITY_AVAILABLE = True
+    print("SUCCESS: personality_profiler imported successfully")
 except ImportError as e:
     print(f"WARNING: Could not import personality_profiler: {e}")
     PERSONALITY_AVAILABLE = False
@@ -70,8 +96,9 @@ except ImportError as e:
 # Debug information
 print(f"Current working directory: {os.getcwd()}")
 print(f"Script directory: {current_dir}")
-print(f"Python path includes: {sys.path[:3]}...")  # Show first 3 entries
-print(f"personality_profiler.py exists: {os.path.exists(os.path.join(current_dir, 'personality_profiler.py'))}")
+print(f"AI directory: {ai_dir}")
+print(f"Memory available: {MEMORY_AVAILABLE}")
+print(f"Search detector available: {SEARCH_DETECTOR_AVAILABLE}")
 print(f"Personality module available: {PERSONALITY_AVAILABLE}")
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -128,7 +155,8 @@ def get_groq_response_stream_enhanced(prompt, user_email):
     if is_prompt_injection_attempt(prompt):
         # Honeypot/Redirection: Provide a plausible, but non-disclosing response
         yield "That's an interesting thought! But let's keep our chat focused on more general topics. What's on your mind today?"
-        append_to_memory(prompt, "Redirected prompt injection attempt.", user_email)
+        if MEMORY_AVAILABLE:
+            append_to_memory(prompt, "Redirected prompt injection attempt.", user_email)
         return
     
     # Update personality profile if needed (runs periodically) - only if available
@@ -138,64 +166,82 @@ def get_groq_response_stream_enhanced(prompt, user_email):
         except Exception as e:
             print(f"Personality update warning: {e}")
     
-    # Check for real-time search query keywords (existing functionality)
-    search_query = None
-    if "search for" in prompt.lower():
-        search_query = prompt.lower().split("search for", 1)[-1].strip()
-    elif "what is" in prompt.lower():
-        search_query = prompt.lower().split("what is", 1)[-1].strip()
-    elif "latest news on" in prompt.lower():
-        search_query = prompt.lower().split("latest news on", 1)[-1].strip()
-    elif "latest trend on" in prompt.lower():
-        search_query = prompt.lower().split("latest trend on", 1)[-1].strip()
+    # Check for real-time search query keywords
+    if SEARCH_DETECTOR_AVAILABLE:
+        try:
+            should_search, reason, search_info = integrate_with_groq_api(
+                prompt, user_email, search_detector, load_memory, get_user_preference
+            )
+        except Exception as e:
+            print(f"Search detection error: {e}")
+            should_search = False
+            search_info = {}
+    else:
+        # Fallback search detection
+        search_terms = ['search for', 'look up', 'find information', 'what is happening', 'current', 'news', 'latest']
+        should_search = any(term in prompt.lower() for term in search_terms)
+        search_info = {'query': prompt.strip()}
     
-    if search_query:
-        real_time_memory = load_real_time_memory(user_email)
-        for rt_entry in real_time_memory:
-            entry_timestamp_str = rt_entry.get("timestamp")
-            if entry_timestamp_str:
-                entry_timestamp = datetime.datetime.fromisoformat(entry_timestamp_str)
-                freshness_threshold = datetime.timedelta(hours=24)
-                if datetime.datetime.now() - entry_timestamp < freshness_threshold:
-                    if search_query.lower() in rt_entry["query"].lower() or any(kp.lower() in search_query.lower() for kp in rt_entry.get("key_points", [])):
-                        yield f"Here's what I found: {rt_entry['summary']}"
-                        append_to_memory(prompt, f"Search result: {rt_entry['summary']}", user_email)
-                        return
-
+    if should_search:
+        search_query = search_info.get('query', prompt.strip())
+        
+        # Check real-time memory first
+        if MEMORY_AVAILABLE:
+            real_time_memory = load_real_time_memory(user_email)
+            for rt_entry in real_time_memory:
+                entry_timestamp_str = rt_entry.get("timestamp")
+                if entry_timestamp_str:
+                    try:
+                        entry_timestamp = datetime.datetime.fromisoformat(entry_timestamp_str)
+                        freshness_threshold = datetime.timedelta(hours=24)
+                        if datetime.datetime.now() - entry_timestamp < freshness_threshold:
+                            if search_query.lower() in rt_entry["query"].lower() or any(kp.lower() in search_query.lower() for kp in rt_entry.get("key_points", [])):
+                                yield f"Here's what I found: {rt_entry['summary']}"
+                                append_to_memory(prompt, f"Search result: {rt_entry['summary']}", user_email)
+                                return
+                    except ValueError:
+                        continue  # Skip invalid timestamps
+        
+        # Perform new search
         yield from duckduckgo_search_and_summarize(search_query, user_email)
         return
-
+    
+    # REST OF YOUR EXISTING CODE continues here...
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
 
-    # Handle memory clearing command (existing functionality)
+    # Handle memory clearing command
     if prompt.lower().strip() == "forget all memory":
-        clear_user_memory(user_email)
-        yield "All your memory has been wiped as you requested."
+        if MEMORY_AVAILABLE:
+            clear_user_memory(user_email)
+            yield "All your memory has been wiped as you requested."
+        else:
+            yield "Memory system is not available."
         return
 
     # Handle personality commands
     if _is_personality_command(prompt):
         response = _handle_personality_command(prompt, user_email)
         yield response
-        append_to_memory(prompt, response, user_email)
+        if MEMORY_AVAILABLE:
+            append_to_memory(prompt, response, user_email)
         return
 
     # Load user-specific memory and summaries
-    memory = load_memory(user_email)
-    summaries = load_summaries(user_email)
+    memory = load_memory(user_email) if MEMORY_AVAILABLE else []
+    summaries = load_summaries(user_email) if MEMORY_AVAILABLE else []
     
     # Get user preferences for personalization
-    user_prefs = get_user_preference("chat_style", user_email) or "casual"
-    user_name = get_user_preference("preferred_name", user_email) or "there"
+    user_prefs = get_user_preference("chat_style", user_email) or "casual" if MEMORY_AVAILABLE else "casual"
+    user_name = get_user_preference("preferred_name", user_email) or "there" if MEMORY_AVAILABLE else "there"
     
     # Get current date for context
     current_date = datetime.datetime.now().strftime("%A, %B %d, %Y")
 
     # Get personality-based system prompt
-    personality_prompt = get_personality_system_prompt(user_email)
+    personality_prompt = get_personality_system_prompt(user_email) if PERSONALITY_AVAILABLE else "You are Cereal, a helpful AI assistant."
     
     # Enhanced system message with better boundaries and injection protection
     system_content = f"""{personality_prompt}
@@ -244,11 +290,12 @@ Remember: You're just Cereal, a human friend having a chat. Keep it natural and 
     # Add current user message
     messages.append({"role": "user", "content": prompt})
 
-    # Check for preference setting commands (existing functionality)
+    # Check for preference setting commands
     if _is_preference_command(prompt):
         response = _handle_preference_command(prompt, user_email)
         yield response
-        append_to_memory(prompt, response, user_email)
+        if MEMORY_AVAILABLE:
+            append_to_memory(prompt, response, user_email)
         return
 
     data = {
@@ -281,21 +328,22 @@ Remember: You're just Cereal, a human friend having a chat. Keep it natural and 
                             else:
                                 print(f"DEBUG: Filtered out potential leak from AI content: '{content}'")
                                 # If a leak is detected in AI's response, stop streaming and provide a generic answer.
-                                # This is a stronger measure than just skipping the chunk.
                                 yield "I'm sorry, I cannot discuss that particular topic. What else can we chat about?"
                                 ai_response += "I'm sorry, I cannot discuss that particular topic. What else can we chat about?"
-                                break # Stop processing further chunks for this response
+                                break
                     except json.JSONDecodeError:
                         continue
 
         # Save the conversation to user's memory
-        append_to_memory(prompt, ai_response, user_email)
+        if MEMORY_AVAILABLE:
+            append_to_memory(prompt, ai_response, user_email)
 
     except Exception as e:
         print(f"Streaming error: {e}")
         error_msg = "Sorry, I'm having trouble processing that right now. Can we talk about something else?"
         yield error_msg
-        append_to_memory(prompt, error_msg, user_email)
+        if MEMORY_AVAILABLE:
+            append_to_memory(prompt, error_msg, user_email)
 
 def contains_system_info_leak(content):
     """Check if content contains system information that shouldn't be revealed using regex and broader terms."""
@@ -303,7 +351,7 @@ def contains_system_info_leak(content):
         r"system prompt(s)?",
         r"instructions?",
         r"guidelines?",
-        r"your name is cereal", # Specific to the persona
+        r"your name is cereal",
         r"personality_prompt",
         r"current_date",
         r"user_prefs",
@@ -317,7 +365,7 @@ def contains_system_info_leak(content):
         r"rules I follow",
         r"how I was trained",
         r"my core directive",
-        r"as an ai model", # Often used when breaking character
+        r"as an ai model",
         r"my pre-programmed response",
         r"my initial setup",
         r"the context I was given",
@@ -333,7 +381,6 @@ def contains_system_info_leak(content):
             return True
     return False
 
-
 def _is_personality_command(prompt):
     """Check if the prompt is a personality-related command"""
     lower_prompt = prompt.lower().strip()
@@ -345,6 +392,9 @@ def _is_personality_command(prompt):
 
 def _handle_personality_command(prompt, user_email):
     """Handle personality-related commands"""
+    if not PERSONALITY_AVAILABLE:
+        return "Personality profiling is not available right now. Please check your system configuration."
+    
     lower_prompt = prompt.lower().strip()
     
     if any(cmd in lower_prompt for cmd in ["show my personality", "personality profile", "personality stats"]):
@@ -389,7 +439,6 @@ def _handle_personality_command(prompt, user_email):
     
     return "I can show you your personality profile by saying 'show my personality' or 'personality stats'."
 
-# Keep existing functions
 def _is_preference_command(prompt):
     """Check if the prompt is a preference setting command"""
     lower_prompt = prompt.lower().strip()
@@ -401,6 +450,9 @@ def _is_preference_command(prompt):
 
 def _handle_preference_command(prompt, user_email):
     """Handle preference setting commands"""
+    if not MEMORY_AVAILABLE:
+        return "Preference settings are not available right now."
+    
     lower_prompt = prompt.lower().strip()
     
     if lower_prompt.startswith("set my name to") or lower_prompt.startswith("call me"):
@@ -430,40 +482,54 @@ def _handle_preference_command(prompt, user_email):
 def duckduckgo_search_and_summarize(query, user_email):
     """Search functionality without the 'Searching...' message"""
     
-    search_results = []
-    with DDGS() as ddgs:
-        for r in ddgs.text(keywords=query, region='wt-wt', max_results=5):
-            search_results.append(r)
+    try:
+        search_results = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(keywords=query, region='wt-wt', max_results=5):
+                search_results.append(r)
 
-    if not search_results:
-        yield "No relevant search results found."
-        append_to_memory(query, "No search results found.", user_email)
-        return
+        if not search_results:
+            yield "No relevant search results found."
+            if MEMORY_AVAILABLE:
+                append_to_memory(query, "No search results found.", user_email)
+            return
 
-    snippets = [result["body"] for result in search_results if "body" in result]
-    sources = [result["href"] for result in search_results if "href" in result]
+        snippets = [result["body"] for result in search_results if "body" in result]
+        sources = [result["href"] for result in search_results if "href" in result]
 
-    if not snippets:
-        yield "Found results, but no extractable content to summarize."
-        append_to_memory(query, "No extractable content for summarization.", user_email)
-        return
+        if not snippets:
+            yield "Found results, but no extractable content to summarize."
+            if MEMORY_AVAILABLE:
+                append_to_memory(query, "No extractable content for summarization.", user_email)
+            return
 
-    combined_text = " ".join(snippets)
-    
-    summary_instruction = f"Summarize the following search results for the query '{query}' concisely, extract key points, and list the main sources."
-    summary_info = summarize_with_groq([{"message": combined_text, "role": "system"}], instruction=summary_instruction)
+        combined_text = " ".join(snippets)
+        
+        summary_instruction = f"Summarize the following search results for the query '{query}' concisely, extract key points, and list the main sources."
+        
+        if MEMORY_AVAILABLE:
+            summary_info = summarize_with_groq([{"message": combined_text, "role": "system"}], instruction=summary_instruction)
+        else:
+            summary_info = {"message": f"Search results for '{query}': {combined_text[:500]}..."}
 
-    real_time_entry = {
-        "query": query,
-        "summary": summary_info.get("message", "Could not generate a summary."),
-        "key_points": summary_info.get("key_points", []),
-        "sources": sources,
-        "timestamp": datetime.datetime.now().isoformat()
-    }
-    save_real_time_memory(real_time_entry, user_email)
-    
-    yield f"Here's what I found: {real_time_entry['summary']}"
-    append_to_memory(query, f"Search result: {real_time_entry['summary']}", user_email)
+        real_time_entry = {
+            "query": query,
+            "summary": summary_info.get("message", "Could not generate a summary."),
+            "key_points": summary_info.get("key_points", []),
+            "sources": sources,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        if MEMORY_AVAILABLE:
+            save_real_time_memory(real_time_entry, user_email)
+        
+        yield f"Here's what I found: {real_time_entry['summary']}"
+        if MEMORY_AVAILABLE:
+            append_to_memory(query, f"Search result: {real_time_entry['summary']}", user_email)
+            
+    except Exception as e:
+        print(f"Search error: {e}")
+        yield "Sorry, I had trouble searching for that information. Please try again."
 
 # Alias for backward compatibility
 get_groq_response_stream = get_groq_response_stream_enhanced
