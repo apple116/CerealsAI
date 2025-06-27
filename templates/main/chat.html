@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CerealsHub</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <!-- Add Marked.js for Markdown parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+    />
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" 
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/main/chat.css') }}">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { primary: "#660000", secondary: "#818CF8" }, 
+            borderRadius: {
+              none: "0px",
+              sm: "4px",
+              DEFAULT: "8px",
+              md: "12px",
+              lg: "16px",
+              xl: "20px",
+              "2xl": "24px",
+              "3xl": "32px",
+              full: "9999px",
+              button: "8px",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="flex justify-between items-center p-4">
+        <a href="{{ url_for('home') }}" data-readdy="true" class="text-4xl text-primary" style="font-family: 'Dancing Script', cursive; font-weight: 999;">CerealsAI</a>
+        <div
+          id="userProfileBtn"
+          class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full cursor-pointer border-2 border-primary hover:border-primary/80 transition-all duration-200"
+        >
+          <i class="ri-user-line ri-lg text-primary"></i>
+        </div>
+      </div>
+      <div id="userMenu" class="user-menu">
+        <div class="p-4 border-b border-gray-200">
+          <div class="font-medium text-gray-900">User Account</div>
+          <div class="text-sm text-gray-500" id="userEmail">Loading...</div> 
+        </div>
+        <div class="menu-item">
+          <i class="ri-settings-3-line mr-2"></i> Settings
+        </div>
+        <div class="menu-item">
+          <i class="ri-history-line mr-2"></i> Chat History
+        </div>
+        <div class="menu-item" id="themeToggle">
+          <i class="ri-moon-line mr-2"></i> Toggle Theme
+        </div>
+        <div class="divider"></div>
+        <div class="menu-item" id="signOutBtn">
+          <i class="ri-logout-box-line mr-2"></i> Sign Out
+        </div>
+      </div>
+      <div class="chat-area flex-1" id="chatArea">
+        </div>
+      <div class="p-4">
+        <div
+          class="flex items-center bg-gray-100 border border-gray-300 rounded-full p-1"
+        >
+          <button
+            class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors"
+          >
+            <i class="ri-add-line ri-lg"></i>
+          </button>
+          <input
+            type="text"
+            class="message-input bg-transparent flex-1 mx-2"
+            placeholder="Message..."
+            id="messageInput"
+          />
+          <button
+            id="sendBtn"
+            class="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-primary transition-colors !rounded-button whitespace-nowrap"
+          >
+            <i class="ri-send-plane-line ri-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Separate JavaScript files -->
+    <script src="{{ url_for('static', filename='js/chat/user-profile.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/chat-functionality.js') }}"></script>
+  </body>
+</html>

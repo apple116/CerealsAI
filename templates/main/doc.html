@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CerealsHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+      rel="stylesheet"
+    />
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" 
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { primary: "#660000", secondary: "#818CF8" },
+            borderRadius: {
+              none: "0px",
+              sm: "4px",
+              DEFAULT: "8px",
+              md: "12px",
+              lg: "16px",
+              xl: "20px",
+              "2xl": "24px",
+              "3xl": "32px",
+              full: "9999px",
+              button: "8px",
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/main/main.css') }}">
+  </head>
+  <body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+      <div class="container mx-auto px-4 py-4 flex justify-between items-center relative">
+        <a href="{{ url_for('home') }}" data-readdy="true" class="text-4xl text-primary" style="font-family: 'Dancing Script', cursive; font-weight: 999;">CerealsAI</a>
+        <div class="flex items-center gap-4">
+          <a
+            href="{{ url_for('home') }}#documentation"
+            class="text-gray-700 hover:text-primary transition-colors"
+            >Documentation</a
+          >
+          <a
+            href="{{ url_for('pricing') }}"
+            class="px-4 py-2 text-gray-700 hover:text-primary transition-colors"
+            >Pricing</a
+          >
+          <a
+            href="{{ url_for('chat') }}"
+            class="px-4 py-2 text-gray-700 hover:text-primary transition-colors"
+            >Chat</a
+          >
+
+          {% if user_logged_in %}
+          <div id="userProfileBtn" class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full cursor-pointer border-2 border-primary hover:border-primary/80 transition-all duration-200">
+            <i class="ri-user-line ri-lg text-primary"></i>
+          </div>
+          {% else %}
+          <a
+            href="{{ url_for('login') }}"
+            class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors"
+            >Sign In</a
+          >
+          <a
+            href="{{ url_for('signup') }}"
+            class="px-4 py-2 text-primary border border-primary rounded-button hover:bg-primary/5 transition-colors"
+            >Sign Up</a
+          >
+          {% endif %}
+        </div>
+
+        {% if user_logged_in %}
+        <div id="userMenu" class="user-menu">
+          <div class="p-4 border-b border-gray-200">
+            <div class="font-medium text-gray-900">User Account</div>
+            <div class="text-sm text-gray-500">
+                {% if session.user %}{{ session.user }}{% else %}user@example.com{% endif %}
+            </div>
+          </div>
+          <div class="menu-item"><i class="ri-settings-3-line mr-2"></i> Settings</div>
+          <div class="menu-item"><i class="ri-history-line mr-2"></i> Chat History</div>
+          <div class="menu-item" id="themeToggle"><i class="ri-moon-line mr-2"></i> Toggle Theme</div>
+          <div class="divider"></div>
+          <a href="{{ url_for('logout') }}" class="menu-item"><i class="ri-logout-box-line mr-2"></i> Sign Out</a>
+        </div>
+        {% endif %}
+    </header>
+
+    <main class="flex-grow">
+      <section class="bg-gray-100 py-20 text-center">
+        <div class="container mx-auto px-4">
+          <h1 class="text-5xl font-bold text-gray-900 mb-6">
+            Unlock the Power of AI
+          </h1>
+          <p class="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+            Experience seamless, intelligent conversations and cutting-edge
+            features designed to boost your productivity.
+          </p>
+          {% if user_logged_in %}
+          <button
+            class="bg-gray-400 cursor-not-allowed text-white text-lg font-semibold px-8 py-4 rounded-button inline-block"
+            onclick="alert('You are already logged in!')"
+            >Get Started for Free</button>
+          {% else %}
+          <a
+            href="{{ url_for('signup') }}"
+            class="bg-primary text-white text-lg font-semibold px-8 py-4 rounded-button hover:bg-primary/90 transition-colors inline-block"
+            >Get Started for Free</a>
+          {% endif %}
+
+        </div>
+      </section>
+
+      <section id="documentation" class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+          <h2 class="text-4xl font-bold text-gray-900 text-center mb-12">
+            Powerful Features at Your Fingertips
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="p-8 border rounded-lg shadow-sm text-center">
+              <div class="text-primary text-5xl mb-4">
+                <i class="ri-lightbulb-line"></i>
+              </div>
+              <h3 class="text-2xl font-semibold text-gray-900 mb-2">
+                Intelligent Responses</h3>
+              <p class="text-gray-700">
+                Get accurate and contextually relevant answers to all your
+                questions.
+              </p>
+            </div>
+            <div class="p-8 border rounded-lg shadow-sm text-center">
+              <div class="text-primary text-5xl mb-4">
+                <i class="ri-code-s-slash-line"></i>
+              </div>
+              <h3 class="text-2xl font-semibold text-gray-900 mb-2">
+                Code Generation
+              </h3>
+              <p class="text-gray-700">
+                Generate code snippets, debug, and understand complex
+                algorithms.
+              </p>
+            </div>
+            <div class="p-8 border rounded-lg shadow-sm text-center">
+              <div class="text-primary text-5xl mb-4">
+                <i class="ri-speak-line"></i>
+              </div>
+              <h3 class="text-2xl font-semibold text-gray-900 mb-2">
+                Multilingual Support
+              </h3>
+              <p class="text-gray-700">
+                Communicate effortlessly in multiple languages with real-time
+                translation.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-gray-100 py-20">
+        <div class="container mx-auto px-4">
+          <h2 class="text-4xl font-bold text-gray-900 text-center mb-12">
+            What Our Users Say
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="bg-white p-8 rounded-lg shadow-sm">
+              <p class="text-gray-700 mb-4">
+                "This AI chat has revolutionized my workflow. The responses are
+                always spot-on and incredibly fast!"
+              </p>
+              <p class="font-semibold text-gray-900">- Cereal, Developer</p>
+            </div>
+            <div class="bg-white p-8 rounded-lg shadow-sm">
+              <p class="text-gray-700 mb-4">
+                "I'm amazed by its ability to understand complex queries. A must-have
+                tool for anyone working with data."
+              </p>
+              <p class="font-semibold text-gray-900">
+                - Incase, Data Scientist
+              </p>
+            </div>
+            <div class="bg-white p-8 rounded-lg shadow-sm">
+              <p class="text-gray-700 mb-4">
+                "The multilingual support is fantastic! It helps me communicate
+                with my global team without any hassle."
+              </p>
+              <p class="font-semibold text-gray-900">
+                - Riku, Project Manager
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-primary text-white py-20 text-center">
+        <div class="container mx-auto px-4">
+          <h2 class="text-4xl font-bold mb-6">Ready to Get Started?</h2>
+          <p class="text-xl mb-8 max-w-2xl mx-auto">
+            Join thousands of satisfied users and elevate your productivity with
+            our AI Chat Platform.
+          </p>
+          {% if user_logged_in %}
+         <button
+            class="bg-gray-400 cursor-not-allowed text-primary text-lg font-semibold px-8 py-4 rounded-button inline-block"
+            onclick="alert('You are already logged in!')"
+            >Create Your Free Account</button>
+         {% else %}
+          <a
+            href="{{ url_for('signup') }}"
+            class="bg-white text-primary text-lg font-semibold px-8 py-4 rounded-button hover:bg-gray-100 transition-colors inline-block"
+            >Create Your Free Account</a>
+          {% endif %}
+
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-gray-900 text-white py-12">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <a
+              href="{{ url_for('home') }}"
+              class="text-2xl font-['Pacifico'] text-white mb-4 inline-block"
+              >logo</a
+            >
+            <p class="text-gray-400 mb-4">
+              Intelligent conversations powered by advanced AI technology.
+            </p>
+            <div class="flex space-x-4">
+              <a
+                href="#"
+                class="text-gray-400 hover:text-white transition-colors"
+              >
+                <div class="w-8 h-8 flex items-center justify-center">
+                  <i class="ri-twitter-x-line ri-lg"></i>
+                </div>
+              </a>
+              <a
+                href="#"
+                class="text-gray-400 hover:text-white transition-colors"
+              >
+                <div class="w-8 h-8 flex items-center justify-center">
+                  <i class="ri-linkedin-line ri-lg"></i>
+                </div>
+              </a>
+              <a
+                href="#"
+                class="text-gray-400 hover:text-white transition-colors"
+              >
+                <div class="w-8 h-8 flex items-center justify-center">
+                  <i class="ri-github-line ri-lg"></i>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-4">Product</h3>
+            <ul class="space-y-2">
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Features</a
+                >
+              </li>
+              <li>
+                <a
+                  href="{{ url_for('pricing') }}"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Pricing</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >API</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Integrations</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-4">Resources</h3>
+            <ul class="space-y-2">
+              <li>
+                <a
+                  href="{{ url_for('home') }}#documentation"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Documentation</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Tutorials</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Blog</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Support</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-4">Company</h3>
+            <ul class="space-y-2">
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >About</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Careers</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Privacy Policy</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="text-gray-400 hover:text-white transition-colors"
+                  >Terms of Service</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div
+          class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center"
+        >
+          <p class="text-gray-400 text-sm mb-4 md:mb-0">
+            © 2025 AI Chat Platform. All rights reserved.
+          </p>
+          <div class="flex space-x-4">
+            <div class="w-8 h-8 flex items-center justify-center">
+              <i class="ri-visa-line text-gray-400 ri-lg"></i>
+            </div>
+            <div class="w-8 h-8 flex items-center justify-center">
+              <i class="ri-mastercard-line text-gray-400 ri-lg"></i>
+            </div>
+            <div class="w-8 h-8 flex items-center justify-center">
+              <i class="ri-paypal-line text-gray-400 ri-lg"></i>
+            </div>
+            <div class="w-8 h-8 flex items-center justify-center">
+              <i class="ri-apple-fill text-gray-400 ri-lg"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js')}}"> </script>
+  </body>
+</html>

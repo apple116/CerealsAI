@@ -1,0 +1,87 @@
+/* style.css */
+
+/* Custom CSS for the user menu */
+.user-menu {
+  position: absolute;
+  top: 70px; /* Adjust based on header height */
+  right: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 200px;
+  z-index: 1000; /* Ensure it's above other content */
+  overflow: hidden;
+  transform: translateY(-10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+.user-menu.active {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.menu-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex; /* Added for icon alignment */
+  align-items: center; /* Added for icon alignment */
+}
+.menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.divider {
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.1);
+  margin: 4px 0;
+}
+/* Dark mode styles */
+body.dark-mode {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+body.dark-mode .bg-white {
+  background-color: #2d2d2d;
+}
+body.dark-mode .text-gray-900 {
+  color: #e0e0e0;
+}
+body.dark-mode .text-gray-700 {
+  color: #b0b0b0;
+}
+body.dark-mode .bg-gray-100 {
+  background-color: #222222;
+}
+body.dark-mode .shadow-sm {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+body.dark-mode .border {
+  border-color: #444444;
+}
+body.dark-mode .user-menu {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+body.dark-mode .menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+body.dark-mode .divider {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+body.dark-mode .border-gray-200 {
+  border-color: #444444;
+}
+body.dark-mode .text-gray-500 {
+  color: #b0b0b0;
+}
+body.dark-mode .bg-gray-900 {
+  background-color: #000000;
+}
+body.dark-mode .text-gray-400 {
+  color: #909090;
+}
+body.dark-mode .border-gray-800 {
+  border-color: #333333;
+}

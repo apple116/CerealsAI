@@ -1,0 +1,26 @@
+# test_requirements.txt
+# Testing dependencies for Groq API Enhanced
+
+# Core testing framework
+pytest>=7.0.0
+pytest-mock>=3.10.0
+
+# For mocking HTTP requests
+responses>=0.23.0
+
+# For testing async functionality
+pytest-asyncio>=0.21.0
+
+# For code coverage
+pytest-cov>=4.0.0
+
+# For colored output
+pytest-html>=3.1.0
+colorama>=0.4.6
+
+# Dependencies that should already be in your main project
+requests>=2.28.0
+duckduckgo-search>=3.8.0
+
+# For environment variable management during testing
+python-dotenv>=1.0.0

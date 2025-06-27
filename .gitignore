@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+venv/
+
+# Environment variables
+.env
+*.env
+
+# Flask-specific and instance storage
+instance/
+*.db
+
+# Logs and caches
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# IDE/editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing artifacts
+testing/__pycache__/
+testing/.pytest_cache/
+
+# Memory user data
+memory/users/*
+!memory/users/.gitkeep
+
+
+# Python egg metadata
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+
+# Node artifacts (if any frontend involved)
+node_modules/
+
+# Optional: compiled JS/CSS from build tools
+static/js/*.map
+static/style/*.map
