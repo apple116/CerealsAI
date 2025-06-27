@@ -1,0 +1,31 @@
+# Web framework
+flask>=2.2.0
+
+# Password hashing
+werkzeug>=2.2.0
+
+# Supabase Python client
+supabase>=1.0.3
+
+# Sentry for error tracking
+sentry-sdk[flask]>=1.43.0
+
+# DuckDuckGo search integration
+duckduckgo-search>=3.8.0
+
+# HTTP Requests
+requests>=2.28.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Utility modules
+colorama>=0.4.6
+
+# Testing frameworks
+pytest>=7.0.0
+pytest-mock>=3.10.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+pytest-html>=3.1.0
+responses>=0.23.0
