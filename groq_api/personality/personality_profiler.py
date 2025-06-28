@@ -6,7 +6,33 @@ import requests
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 import statistics
-from memory import get_user_files, load_memory, load_summaries, set_user_preference, get_user_preference
+import sys
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+sys.path.insert(0, os.path.abspath(project_root))
+try:
+    from memory.memory import (
+        get_user_files, 
+        load_memory, 
+        load_summaries, 
+        set_user_preference, 
+        get_user_preference
+    )
+except ImportError:
+    # Fallback functions if memory module is not available
+    def get_user_files(user_id):
+        return []
+    
+    def load_memory(user_id):
+        return {}
+    
+    def load_summaries(user_id):
+        return []
+    
+    def set_user_preference(user_id, key, value):
+        return True
+    
+    def get_user_preference(user_id, key, default=None):
+        return default
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"

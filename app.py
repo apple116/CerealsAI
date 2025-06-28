@@ -7,7 +7,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 # Import modules with proper error handling
 try:
-    from AI.groq_api import get_groq_response_stream
+    from groq_api import get_groq_response_stream_enhanced, get_groq_response_stream
 except ImportError as e:
     print(f"ERROR: Could not import groq_api: {e}")
     sys.exit(1)
@@ -19,10 +19,15 @@ except ImportError as e:
     sys.exit(1)
 
 # Import personality profiler functions
+groq_api_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'groq_api')
+if groq_api_path not in sys.path:
+    sys.path.insert(0, groq_api_path)
+
+# Import personality profiler functions
 try:
-    from AI.personality_profiler import (
-        update_user_personality, 
-        get_personality_system_prompt, 
+    from personality.personality_profiler import (
+        update_user_personality,
+        get_personality_system_prompt,
         get_user_personality_stats
     )
     PERSONALITY_AVAILABLE = True

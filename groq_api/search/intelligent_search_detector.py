@@ -1,5 +1,4 @@
 # intelligent_search_detector.py
-# intelligent_search_detector.py
 # Simplified version without external dependencies (no spacy/nltk required)
 
 import re

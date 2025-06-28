@@ -91,7 +91,7 @@ def summarize_with_groq(messages, instruction=None): #
     } #
 
     data = { #
-        "model": "llama3-8b-8192", #
+        "model": "compound-beta-mini", #
         "messages": [{"role": "user", "content": summary_prompt}], #
         "temperature": 0.3, #
         "stream": False #
