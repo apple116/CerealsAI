@@ -4,28 +4,26 @@ import os
 import sys
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
+from datetime import datetime
 
 # Import modules with proper error handling
 try:
-    from groq_api import get_groq_response_stream_enhanced, get_groq_response_stream
+    from AI.groq_api import get_groq_response_stream
+    GROQ_AVAILABLE = True
 except ImportError as e:
-    print(f"ERROR: Could not import groq_api: {e}")
-    sys.exit(1)
+    print(f"WARNING: Could not import groq_api: {e}")
+    GROQ_AVAILABLE = False
 
 try:
     import database
+    DATABASE_AVAILABLE = True
 except ImportError as e:
-    print(f"ERROR: Could not import database: {e}")
-    sys.exit(1)
-
-# Import personality profiler functions
-groq_api_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'groq_api')
-if groq_api_path not in sys.path:
-    sys.path.insert(0, groq_api_path)
+    print(f"WARNING: Could not import database: {e}")
+    DATABASE_AVAILABLE = False
 
 # Import personality profiler functions
 try:
-    from personality.personality_profiler import (
+    from AI.modules.personality.personality_profiler import (
         update_user_personality,
         get_personality_system_prompt,
         get_user_personality_stats
@@ -46,18 +44,33 @@ def create_app():
         sentry_sdk.init(
             dsn=sentry_dsn,
             integrations=[FlaskIntegration()],
-            traces_sample_rate=1.0,  # Adjust sampling rate as needed (0.0 to 1.0)
-            send_default_pii=True    # To send user info like emails (optional)
+            traces_sample_rate=1.0,
+            send_default_pii=True
         )
     else:
         print("WARNING: SENTRY_DSN not set. Sentry monitoring is disabled.")
 
-    # Rest of your app config & routes here...
-    app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+    # App configuration
+    app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
     
-    if not app.secret_key:
-        print("CRITICAL WARNING: FLASK_SECRET_KEY environment variable not set. Session security compromised. Exiting.")
-        sys.exit(1)
+    if app.secret_key == "dev-secret-key-change-in-production":
+        print("WARNING: Using default secret key. Set FLASK_SECRET_KEY environment variable for production.")
+
+    # Mock data for development when database is not available
+    mock_sessions = []
+    mock_users = {}
+
+    def get_memory_module():
+        """Safely import memory module"""
+        try:
+            memory_path = os.path.join(os.path.dirname(__file__), "memory")
+            if memory_path not in sys.path:
+                sys.path.append(memory_path)
+            import memory
+            return memory
+        except ImportError as e:
+            print(f"WARNING: Could not import memory module: {e}")
+            return None
 
     @app.route('/')
     def home():
@@ -71,18 +84,74 @@ def create_app():
             password = request.form['password']
             
             try:
-                user = database.get_user_by_email(email)
-                
-                if user and database.verify_password(user['password'], password):
-                    session['user'] = user['email']
-                    return redirect(url_for('chat'))
+                if DATABASE_AVAILABLE:
+                    user = database.get_user_by_email(email)
+                    if user and database.verify_password(user['password'], password):
+                        session['user'] = user['email']
+                        return redirect(url_for('chat'))
+                    else:
+                        return render_template('user/login.html', error="Invalid email or password")
                 else:
-                    return render_template('user/login.html', error="Invalid email or password")
+                    # Mock authentication for development
+                    if email in mock_users and check_password_hash(mock_users[email]['password'], password):
+                        session['user'] = email
+                        return redirect(url_for('chat'))
+                    else:
+                        return render_template('user/login.html', error="Invalid email or password (using mock auth)")
             except Exception as e:
                 print(f"ERROR in login: {e}")
                 return render_template('user/login.html', error="Login failed. Please try again.")
                 
         return render_template('user/login.html')
+
+    @app.route('/signup', methods=['GET', 'POST'])
+    def signup():
+        if request.method == 'POST':
+            email = request.form['email']
+            password = request.form['password']
+            confirm_password = request.form.get('confirm-password')
+
+            if not email or not password or not confirm_password:
+                return render_template('user/signup.html', error="All fields are required")
+            
+            if password != confirm_password:
+                return render_template('user/signup.html', error="Passwords do not match")
+            
+            if len(password) < 6:
+                return render_template('user/signup.html', error="Password must be at least 6 characters long")
+
+            try:
+                if DATABASE_AVAILABLE:
+                    if database.add_user(email, password):
+                        session['user'] = email
+                        memory_module = get_memory_module()
+                        if memory_module:
+                            try:
+                                memory_module.set_user_preference("chat_style", "casual", email)
+                                memory_module.set_user_preference("preferred_name", "there", email)
+                            except Exception as e:
+                                print(f"WARNING: Could not set initial preferences: {e}")
+                        return redirect(url_for('chat'))
+                    else:
+                        return render_template('user/signup.html', error="Email already registered")
+                else:
+                    # Mock user creation for development
+                    if email in mock_users:
+                        return render_template('user/signup.html', error="Email already registered (mock)")
+                    
+                    mock_users[email] = {
+                        'email': email,
+                        'password': generate_password_hash(password),
+                        'created_at': datetime.now()
+                    }
+                    session['user'] = email
+                    return redirect(url_for('chat'))
+                    
+            except Exception as e:
+                print(f"ERROR in signup: {e}")
+                return render_template('user/signup.html', error="Signup failed. Please try again.")
+                
+        return render_template('user/signup.html')
 
     @app.route('/pricing')
     def pricing():
@@ -94,9 +163,8 @@ def create_app():
         if 'user' not in session:
             return redirect(url_for('login'))
         user_logged_in = 'user' in session
-        user_email = session.get('user', 'Guest') # Get user email from session
-        return render_template('main/chat.html', user_logged_in=user_logged_in, user_email=user_email) # Pass user_email
-        
+        user_email = session.get('user', 'Guest')
+        return render_template('main/chat.html', user_logged_in=user_logged_in, user_email=user_email)
 
     @app.route('/chat', methods=['POST'])
     def chat_post():
@@ -107,16 +175,17 @@ def create_app():
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
         
-        # Get user email from session
         user_email = session['user']
         
         try:
-            # Call streaming but collect full response before sending JSON
-            full_response = ""
-            for chunk in get_groq_response_stream(user_message, user_email):
-                full_response += chunk
-
-            return jsonify({'response': full_response})
+            if GROQ_AVAILABLE:
+                full_response = ""
+                for chunk in get_groq_response_stream(user_message, user_email):
+                    full_response += chunk
+                return jsonify({'response': full_response})
+            else:
+                # Mock response when Groq is not available
+                return jsonify({'response': f"Mock response to: {user_message} (Groq API not available)"})
         except Exception as e:
             print(f"ERROR in chat_post: {e}")
             return jsonify({'error': 'Failed to generate response'}), 500
@@ -131,31 +200,242 @@ def create_app():
         if not user_message:
             return jsonify({"error": "No message provided"}), 400
 
-        # Get user email from session
         user_email = session['user']
 
         def generate():
             try:
-                for token in get_groq_response_stream(user_message, user_email):
-                    yield token
+                if GROQ_AVAILABLE:
+                    for token in get_groq_response_stream(user_message, user_email):
+                        yield token
+                else:
+                    # Mock streaming response
+                    mock_response = f"Mock streaming response to: {user_message}"
+                    for char in mock_response:
+                        yield char
             except Exception as e:
                 print(f"ERROR in stream_chat: {e}")
                 yield f"Error: {str(e)}"
 
         return Response(generate(), mimetype='text/plain')
 
-    def get_memory_module():
-        """Safely import memory module"""
+    # Chat Sessions API Endpoints
+    @app.route('/api/chat-sessions', methods=['GET'])
+    def get_chat_sessions():
+        """Get all chat sessions for the current user"""
+        if 'user' not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+    
+        user_email = session['user']
+    
         try:
-            memory_path = os.path.join(os.path.dirname(__file__), "memory")
-            if memory_path not in sys.path:
-                sys.path.append(memory_path)
-            import memory
-            return memory
-        except ImportError as e:
-            print(f"WARNING: Could not import memory module: {e}")
-            return None
+            if DATABASE_AVAILABLE:
+                sessions = database.get_user_chat_sessions(user_email)
+            # Convert UUID to string for JSON serialization
+                for session_data in sessions:
+                    if 'session_id' in session_data:
+                        session_data['session_id'] = str(session_data['session_id'])
+            else:
+            # Return mock sessions for development
+                user_sessions = [s for s in mock_sessions if s.get('user_email') == user_email]
+                sessions = user_sessions
+        
+        # Return sessions directly, not wrapped in another object
+            return jsonify(sessions)  # Changed this line
+        except Exception as e:
+            print(f"Error retrieving chat sessions: {e}")
+            return jsonify({"error": "Failed to retrieve chat sessions"}), 500
 
+    @app.route('/api/chat-sessions', methods=['POST'])
+    def create_chat_session():
+        """Create a new chat session"""
+        if 'user' not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        user_email = session['user']
+        data = request.get_json()
+        title = data.get('title', 'New Chat')
+        
+        try:
+            if DATABASE_AVAILABLE:
+                session_data = database.create_chat_session(user_email, title)
+                if session_data:
+                    return jsonify({
+                        "session_id": str(session_data['session_id']),
+                        "title": session_data['title'],
+                        "created_at": session_data['created_at'],
+                        "updated_at": session_data.get('updated_at', session_data['created_at'])
+                    })
+                else:
+                    return jsonify({"error": "Failed to create session"}), 500
+            else:
+                # Mock session creation
+                session_id = len(mock_sessions) + 1
+                new_session = {
+                    'id': session_id,
+                    'title': title,
+                    'user_email': user_email,
+                    'created_at': datetime.now().isoformat(),
+                    'updated_at': datetime.now().isoformat(),
+                    'message_count': 0
+                }
+                mock_sessions.append(new_session)
+                
+                return jsonify({
+                    "session_id": session_id,
+                    "title": title,
+                    "created_at": datetime.now().isoformat()
+                })
+        except Exception as e:
+            print(f"Error creating chat session: {e}")
+            return jsonify({"error": "Failed to create chat session"}), 500
+
+
+
+    @app.route('/api/chat-sessions/<session_id>', methods=['DELETE'])
+    def delete_chat_session(session_id):
+        """Delete a chat session"""
+        if 'user' not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        user_email = session['user']
+        
+        try:
+            if DATABASE_AVAILABLE:
+                success = database.delete_chat_session(session_id, user_email)
+            else:
+                # Mock session deletion
+                global mock_sessions
+                original_length = len(mock_sessions)
+                mock_sessions = [s for s in mock_sessions if not (str(s.get('id')) == str(session_id) and s['user_email'] == user_email)]
+                success = len(mock_sessions) < original_length
+            
+            if success:
+                return jsonify({"message": "Session deleted successfully"})
+            else:
+                return jsonify({"error": "Session not found or unauthorized"}), 404
+        except Exception as e:
+            print(f"Error deleting chat session: {e}")
+            return jsonify({"error": "Failed to delete chat session"}), 500
+
+    @app.route('/api/chat-sessions/<session_id>/messages', methods=['GET'])
+    def get_session_messages(session_id):
+        """Get all messages for a specific chat session"""
+        if 'user' not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        user_email = session['user']
+        
+        try:
+            if DATABASE_AVAILABLE:
+                # First verify the session belongs to the user
+                sessions = database.get_user_chat_sessions(user_email)
+                session_exists = any(str(s['session_id']) == str(session_id) for s in sessions)
+                
+                if not session_exists:
+                    return jsonify({"error": "Session not found or unauthorized"}), 404
+                
+                messages = database.get_chat_messages(session_id)
+                # Convert UUID to string for JSON serialization
+                for message in messages:
+                    if 'message_id' in message:
+                        message['message_id'] = str(message['message_id'])
+                    if 'session_id' in message:
+                        message['session_id'] = str(message['session_id'])
+                
+                return jsonify({"messages": messages})
+            else:
+                # Mock messages for development
+                return jsonify({"messages": []})
+        except Exception as e:
+            print(f"Error retrieving session messages: {e}")
+            return jsonify({"error": "Failed to retrieve messages"}), 500
+
+    @app.route('/api/chat-sessions/<session_id>/messages', methods=['POST'])
+    def save_session_message(session_id):
+        """Save a message to a specific chat session"""
+        if 'user' not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        user_email = session['user']
+        data = request.get_json()
+        message_type = data.get('message_type')  # 'user' or 'assistant'
+        content = data.get('content')
+        
+        if not message_type or not content:
+            return jsonify({"error": "message_type and content are required"}), 400
+        
+        if message_type not in ['user', 'assistant']:
+            return jsonify({"error": "message_type must be 'user' or 'assistant'"}), 400
+        
+        try:
+            if DATABASE_AVAILABLE:
+                # First verify the session belongs to the user
+                sessions = database.get_user_chat_sessions(user_email)
+                session_exists = any(str(s['session_id']) == str(session_id) for s in sessions)
+                
+                if not session_exists:
+                    return jsonify({"error": "Session not found or unauthorized"}), 404
+                
+                message_data = database.save_chat_message(session_id, user_email, message_type, content)
+                if message_data:
+                    # Convert UUID to string for JSON serialization
+                    message_data['message_id'] = str(message_data['message_id'])
+                    message_data['session_id'] = str(message_data['session_id'])
+                    return jsonify({"message": "Message saved successfully", "data": message_data})
+                else:
+                    return jsonify({"error": "Failed to save message"}), 500
+            else:
+                # Mock message saving for development
+                return jsonify({"message": "Message saved successfully (mock)"})
+        except Exception as e:
+            print(f"Error saving session message: {e}")
+            return jsonify({"error": "Failed to save message"}), 500
+
+    @app.route('/api/user-info')
+    def get_user_info():
+        """API endpoint to get current user information"""
+        if 'user' not in session:
+            return jsonify({"error": "Not authenticated"}), 401
+        
+        user_email = session['user']
+        
+        try:
+            if DATABASE_AVAILABLE:
+                user = database.get_user_by_email(user_email)
+                if user:
+                    return jsonify({
+                        "email": user['email'],
+                        "authenticated": True,
+                        "personality_available": PERSONALITY_AVAILABLE
+                    })
+                else:
+                    return jsonify({"error": "User not found"}), 404
+            else:
+                # Mock user info
+                if user_email in mock_users:
+                    return jsonify({
+                        "email": user_email,
+                        "authenticated": True,
+                        "personality_available": PERSONALITY_AVAILABLE
+                    })
+                else:
+                    return jsonify({"error": "User not found"}), 404
+        except Exception as e:
+            print(f"ERROR in get_user_info: {e}")
+            return jsonify({"error": "Failed to get user info"}), 500
+
+    @app.route('/logout', methods=['POST'])
+    def logout_post():
+        """Handle POST logout requests"""
+        session.pop('user', None)
+        return jsonify({"message": "Logged out successfully"})
+
+    @app.route('/logout')
+    def logout():
+        session.pop('user', None)
+        return redirect(url_for('login'))
+
+    # Memory and Personality endpoints (existing code)
     @app.route('/memory-stats')
     def memory_stats():
         """Endpoint to view user's memory statistics"""
@@ -178,7 +458,7 @@ def create_app():
                 "active_memories": len(memory),
                 "conversation_summaries": len(summaries),
                 "preferences": preferences,
-                "recent_messages": memory[-5:] if memory else []  # Last 5 messages
+                "recent_messages": memory[-5:] if memory else []
             }
             
             return jsonify(stats)
@@ -209,8 +489,6 @@ def create_app():
             print(f"ERROR in clear_memory: {e}")
             return jsonify({"error": "Failed to clear memory"}), 500
 
-    # NEW PERSONALITY PROFILER ENDPOINTS
-    
     @app.route('/personality-profile')
     def personality_profile():
         """Endpoint to view user's personality profile"""
@@ -223,7 +501,6 @@ def create_app():
         user_email = session['user']
         
         try:
-            # Get personality stats
             personality_stats = get_user_personality_stats(user_email)
             
             if not personality_stats:
@@ -232,7 +509,6 @@ def create_app():
                     "profile_exists": False
                 })
             
-            # Format the personality data for better presentation
             traits = personality_stats.get("personality_traits", {})
             formatted_traits = {}
             
@@ -261,7 +537,7 @@ def create_app():
                 "profile_exists": True,
                 "email": user_email,
                 "personality_traits": formatted_traits,
-                "interests": personality_stats.get("interests", [])[:10],  # Top 10 interests
+                "interests": personality_stats.get("interests", [])[:10],
                 "communication_style": personality_stats.get("communication_style", "neutral"),
                 "preferred_topics": personality_stats.get("preferred_topics", [])[:5],
                 "common_phrases": personality_stats.get("common_phrases", [])[:5],
@@ -290,7 +566,6 @@ def create_app():
         user_email = session['user']
         
         try:
-            # Force update personality profile
             updated = update_user_personality(user_email)
             
             if updated:
@@ -331,7 +606,6 @@ def create_app():
             traits = personality_stats.get("personality_traits", {})
             insights = []
             
-            # Generate insights based on personality traits
             if traits.get("formality", 0.5) > 0.7:
                 insights.append({
                     "type": "communication",
@@ -386,7 +660,6 @@ def create_app():
                     "icon": "❤️"
                 })
             
-            # Add interest-based insights
             interests = personality_stats.get("interests", [])
             if interests:
                 insights.append({
@@ -399,7 +672,7 @@ def create_app():
             return jsonify({
                 "insights": insights,
                 "total_insights": len(insights),
-                "profile_strength": min(100, personality_stats.get("message_count", 0) * 2)  # Profile strength based on message count
+                "profile_strength": min(100, personality_stats.get("message_count", 0) * 2)
             })
             
         except Exception as e:
@@ -421,77 +694,6 @@ def create_app():
                              user_email=user_email,
                              personality_available=personality_available)
 
-    @app.route('/api/user-info')
-    def get_user_info():
-        """API endpoint to get current user information"""
-        if 'user' not in session:
-            return jsonify({"error": "Not authenticated"}), 401
-        
-        user_email = session['user']
-        
-        try:
-            user = database.get_user_by_email(user_email)
-            if user:
-                return jsonify({
-                    "email": user['email'],
-                    "authenticated": True,
-                    "personality_available": PERSONALITY_AVAILABLE
-                })
-            else:
-                return jsonify({"error": "User not found"}), 404
-        except Exception as e:
-            print(f"ERROR in get_user_info: {e}")
-            return jsonify({"error": "Failed to get user info"}), 500
-
-    @app.route('/logout', methods=['POST'])
-    def logout_post():
-        """Handle POST logout requests"""
-        session.pop('user', None)
-        return jsonify({"message": "Logged out successfully"})
-
-    # Keep the existing GET logout route for direct navigation
-    @app.route('/logout')
-    def logout():
-        session.pop('user', None)
-        return redirect(url_for('login'))
-
-    @app.route('/signup', methods=['GET', 'POST'])
-    def signup():
-        if request.method == 'POST':
-            email = request.form['email']
-            password = request.form['password']
-            confirm_password = request.form.get('confirm-password')
-
-            if not email or not password or not confirm_password:
-                return render_template('user/signup.html', error="All fields are required")
-            
-            if password != confirm_password:
-                return render_template('user/signup.html', error="Passwords do not match")
-            
-            if len(password) < 6:
-                return render_template('user/signup.html', error="Password must be at least 6 characters long")
-
-            try:
-                if database.add_user(email, password):
-                    session['user'] = email
-                    # Initialize user preferences when they sign up
-                    memory_module = get_memory_module()
-                    if memory_module:
-                        try:
-                            memory_module.set_user_preference("chat_style", "casual", email)
-                            memory_module.set_user_preference("preferred_name", "there", email)
-                        except Exception as e:
-                            print(f"WARNING: Could not set initial preferences: {e}")
-                    
-                    return redirect(url_for('chat'))
-                else:
-                    return render_template('user/signup.html', error="Email already registered")
-            except Exception as e:
-                print(f"ERROR in signup: {e}")
-                return render_template('user/signup.html', error="Signup failed. Please try again.")
-                
-        return render_template('user/signup.html')
-
     @app.after_request
     def set_security_headers(response):
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
@@ -503,15 +705,11 @@ def create_app():
 
     @app.before_request
     def block_malformed_requests():
-        # Flask's request.environ['SERVER_PROTOCOL'] should be HTTP/1.0 or HTTP/1.1 normally
         protocol = request.environ.get('SERVER_PROTOCOL', '')
         if not protocol.startswith('HTTP/'):
-            # Likely a malformed request or binary junk; block it
             abort(400, description="Malformed request")
 
     return app
-    
-                  
 
 # Create the app instance
 app = create_app()

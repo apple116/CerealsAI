@@ -3,6 +3,8 @@ import os
 import sys
 from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
+from datetime import datetime
 
 # Supabase configuration
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -139,6 +141,71 @@ def validate_database_schema(supabase_client):
         print(f"❌ Schema validation failed: {e}")
         return False
 
+def create_chat_session(user_email, title=None):
+    """Create a new chat session"""
+    try:
+        session_data = {
+            'user_email': user_email,
+            'title': title or f"Chat {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        }
+        result = supabase.table('chat_sessions').insert(session_data).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error creating chat session: {e}")
+        return None
+
+def get_user_chat_sessions(user_email):
+    """Get all chat sessions for a user"""
+    try:
+        result = supabase.table('chat_sessions').select('*').eq('user_email', user_email).order('updated_at', desc=True).execute()
+        return result.data
+    except Exception as e:
+        print(f"Error retrieving chat sessions: {e}")
+        return []
+
+def get_chat_messages(session_id):
+    """Get all messages for a chat session"""
+    try:
+        result = supabase.table('chat_messages').select('*').eq('session_id', session_id).order('created_at').execute()
+        return result.data
+    except Exception as e:
+        print(f"Error retrieving chat messages: {e}")
+        return []
+
+def save_chat_message(session_id, user_email, message_type, content):
+    """Save a chat message"""
+    try:
+        message_data = {
+            'session_id': session_id,
+            'user_email': user_email,
+            'message_type': message_type,
+            'content': content
+        }
+        result = supabase.table('chat_messages').insert(message_data).execute()
+        
+        # Update session's updated_at timestamp
+        supabase.table('chat_sessions').update({'updated_at': datetime.now().isoformat()}).eq('session_id', session_id).execute()
+        
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error saving chat message: {e}")
+        return None
+
+
+def delete_chat_session(session_id, user_email):
+    """Delete a chat session and all its messages"""
+    try:
+        # First delete all messages for this session
+        supabase.table('chat_messages').delete().eq('session_id', session_id).execute()
+        
+        # Then delete the session
+        result = supabase.table('chat_sessions').delete().eq('session_id', session_id).eq('user_email', user_email).execute()
+        
+        return len(result.data) > 0
+    except Exception as e:
+        print(f"Error deleting chat session: {e}")
+        return False
+        
 def get_table_info_sql():
     """Return SQL to check table information"""
     return """
@@ -155,6 +222,42 @@ WHERE
     AND table_schema = 'public'
 ORDER BY 
     ordinal_position;
+"""
+
+# Chat sessions table creation SQL - run this in Supabase SQL editor
+def get_chat_sessions_table_sql():
+    """Return SQL to create chat_sessions table"""
+    return """
+-- Create chat_sessions table
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    session_id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create index for faster queries
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_email ON chat_sessions(user_email);
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_updated_at ON chat_sessions(updated_at);
+"""
+
+def get_chat_messages_table_sql():
+    """Return SQL to create chat_messages table"""
+    return """
+-- Create chat_messages table
+CREATE TABLE IF NOT EXISTS chat_messages (
+    message_id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    session_id UUID NOT NULL REFERENCES chat_sessions(session_id) ON DELETE CASCADE,
+    user_email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+    message_type TEXT NOT NULL CHECK (message_type IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
 """
 
 # Initialize the database connection when the module is imported
