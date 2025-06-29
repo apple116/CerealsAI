@@ -514,7 +514,7 @@ document.addEventListener("DOMContentLoaded", function () {
 const additionalStyles = `
     <style>
         .session-sidebar {
-            min-width: 280px;
+            min-width: 260px;
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
         
