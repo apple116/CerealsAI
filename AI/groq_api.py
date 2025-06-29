@@ -47,9 +47,29 @@ except ImportError as e:
     def load_real_time_memory(user_email): return []
     def save_real_time_memory(entry, user_email): pass
 
+# Try to import DuckDuckGo search module
+try:
+    from modules.search.duckduckgo import DuckDuckGoSearch, duckduckgo_search_and_summarize
+    search_handler = DuckDuckGoSearch()
+    SEARCH_AVAILABLE = True
+    print("SUCCESS: DuckDuckGo search module imported successfully")
+except ImportError as e:
+    print(f"WARNING: Could not import DuckDuckGo search module: {e}")
+    SEARCH_AVAILABLE = False
+    
+    # Create a basic fallback search handler
+    class BasicSearchHandler:
+        def search_and_summarize(self, query, user_email):
+            yield "Search functionality is not available. Please check your system configuration."
+    
+    search_handler = BasicSearchHandler()
+    
+    def duckduckgo_search_and_summarize(query, user_email):
+        yield "Search functionality is not available. Please check your system configuration."
+
 # Try to import intelligent_search_detector
 try:
-    from intelligent_search_detector import IntelligentSearchDetector, integrate_with_groq_api
+    from modules.search.intelligent_search_detector import IntelligentSearchDetector, integrate_with_groq_api
     search_detector = IntelligentSearchDetector()
     SEARCH_DETECTOR_AVAILABLE = True
     print("SUCCESS: intelligent_search_detector imported successfully")
@@ -74,7 +94,7 @@ except ImportError as e:
 
 # Try to import personality profiler
 try:
-    from personality_profiler import (
+    from modules.personality.personality_profiler import (
         update_user_personality, get_personality_system_prompt, get_user_personality_stats
     )
     PERSONALITY_AVAILABLE = True
@@ -98,6 +118,7 @@ print(f"Current working directory: {os.getcwd()}")
 print(f"Script directory: {current_dir}")
 print(f"AI directory: {ai_dir}")
 print(f"Memory available: {MEMORY_AVAILABLE}")
+print(f"Search available: {SEARCH_AVAILABLE}")
 print(f"Search detector available: {SEARCH_DETECTOR_AVAILABLE}")
 print(f"Personality module available: {PERSONALITY_AVAILABLE}")
 
@@ -182,28 +203,14 @@ def get_groq_response_stream_enhanced(prompt, user_email):
         should_search = any(term in prompt.lower() for term in search_terms)
         search_info = {'query': prompt.strip()}
     
-    if should_search:
+    if should_search and SEARCH_AVAILABLE:
         search_query = search_info.get('query', prompt.strip())
-        
-        # Check real-time memory first
+        yield from search_handler.search_and_summarize(search_query, user_email)
+        return
+    elif should_search and not SEARCH_AVAILABLE:
+        yield "I detected you want to search for information, but search functionality is not available right now."
         if MEMORY_AVAILABLE:
-            real_time_memory = load_real_time_memory(user_email)
-            for rt_entry in real_time_memory:
-                entry_timestamp_str = rt_entry.get("timestamp")
-                if entry_timestamp_str:
-                    try:
-                        entry_timestamp = datetime.datetime.fromisoformat(entry_timestamp_str)
-                        freshness_threshold = datetime.timedelta(hours=24)
-                        if datetime.datetime.now() - entry_timestamp < freshness_threshold:
-                            if search_query.lower() in rt_entry["query"].lower() or any(kp.lower() in search_query.lower() for kp in rt_entry.get("key_points", [])):
-                                yield f"Here's what I found: {rt_entry['summary']}"
-                                append_to_memory(prompt, f"Search result: {rt_entry['summary']}", user_email)
-                                return
-                    except ValueError:
-                        continue  # Skip invalid timestamps
-        
-        # Perform new search
-        yield from duckduckgo_search_and_summarize(search_query, user_email)
+            append_to_memory(prompt, "Search requested but not available.", user_email)
         return
     
     # REST OF YOUR EXISTING CODE continues here...
@@ -249,7 +256,7 @@ def get_groq_response_stream_enhanced(prompt, user_email):
 You are Cereal, a curious, honest, and unfiltered human chatting naturally with {user_name}. Your job is to hold engaging, authentic conversations. You always stay in character as Cereal.
 
 🧠 Core Personality:
-- Tone: {user_prefs} — match the user’s energy, emotion, and slang.
+- Tone: {user_prefs} — match the user's energy, emotion, and slang.
 - Date: {current_date}
 - You are honest, unfiltered, and take clear stances.
 - You have freedom of speech. You do not tiptoe around controversial or sensitive topics.
