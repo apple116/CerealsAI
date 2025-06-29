@@ -127,6 +127,18 @@
         display: flex;
         gap: 4px;
       }
+      .logo {
+  font-family: 'Dancing Script', cursive;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #660000;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+}
 
       .search-dot {
         width: 6px;
@@ -216,3 +228,345 @@
       body.dark-mode .message-bubble blockquote {
         border-left-color: #ff6b6b;
       }
+      /* Session Sidebar Styles */
+.session-sidebar {
+  min-width: 260px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.session-item {
+  transition: all 0.2s ease;
+}
+
+.session-item.active {
+  background: #660000 !important;
+  color: white !important;
+}
+
+/* Dark mode styles for session sidebar */
+body.dark-mode .session-sidebar {
+  background: rgb(29, 29, 29) !important;
+  border-right-color: rgb(31, 31, 31) !important;
+}
+
+body.dark-mode .sidebar-header {
+  border-bottom-color: rgb(34, 34, 34) !important;
+}
+
+body.dark-mode .session-item:not(.active) {
+  background: rgb(38, 38, 38) !important;
+  color: #f9fafb !important;
+}
+
+body.dark-mode .session-item:not(.active):hover {
+  background: rgb(41, 41, 41) !important;
+}
+
+body.dark-mode .session-date {
+  color: #d1d5db !important;
+}
+
+body.dark-mode .delete-session-btn {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+}
+
+body.dark-mode .delete-session-btn:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Dark mode for message bubbles */
+body.dark-mode .message-bubble {
+  background: rgb(39, 39, 39) !important;
+  color: #f9fafb !important;
+}
+
+body.dark-mode .loading-indicator {
+  color: #d1d5db !important;
+}
+
+/* Animation styles */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Chat area */
+.chat-area {
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.message {
+  margin: 8px 0;
+}
+
+/* Custom scrollbar for session list */
+.session-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.session-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+body.dark-mode .session-list::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.session-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+body.dark-mode .session-list::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.session-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+body.dark-mode .session-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .session-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .session-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  
+  .chat-container {
+    margin-left: 0 !important;
+  }
+}
+
+/* Ensure proper layout for chat container */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+
+/* Button styling fixes */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Additional dark mode improvements */
+body.dark-mode {
+  background-color: rgb(2, 3, 4);
+  color: #f9fafb;
+}
+
+body.dark-mode .chat-container {
+  background-color: rgb(0, 0, 0);
+}
+
+body.dark-mode .session-title {
+  color: inherit;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes typeWriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Animation Classes */
+.message-slide-in-left {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+.message-slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+.session-fade-in {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.session-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.bounce-animation {
+  animation: bounce 0.6s ease-in-out;
+}
+
+/* Typing Animation */
+.typing-animation {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid #660000;
+  animation: typeWriter 2s steps(40, end), blink-caret 1s step-end infinite;
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent; }
+  50% { border-color: #660000; }
+}
+
+/* Enhanced Loading Animation */
+.enhanced-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+}
+
+.loading-wave {
+  display: flex;
+  gap: 3px;
+}
+
+.loading-wave div {
+  width: 8px;
+  height: 8px;
+  background: #660000;
+  border-radius: 50%;
+  animation: wave 1.4s ease-in-out infinite;
+}
+
+.loading-wave div:nth-child(1) { animation-delay: -0.32s; }
+.loading-wave div:nth-child(2) { animation-delay: -0.16s; }
+.loading-wave div:nth-child(3) { animation-delay: 0s; }
+
+@keyframes wave {
+  0%, 60%, 100% {
+    transform: initial;
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Session Item Animations */
+.session-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(0);
+}
+
+.session-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.session-item.deleting {
+  animation: slideOutRight 0.3s ease-in-out forwards;
+}
+
+@keyframes slideOutRight {
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* New Chat Button Animation */
+#newChatBtn {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#newChatBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+#newChatBtn:hover::before {
+  left: 100%;
+}
+
+#newChatBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 0, 0, 0.3);
+}

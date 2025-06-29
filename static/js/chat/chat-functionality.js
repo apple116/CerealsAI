@@ -44,90 +44,104 @@ class ChatSessionManager {
         });
     }
 
-    createSessionSidebar() {
-        // Check if sidebar already exists
-        if (document.querySelector('.session-sidebar')) {
-            this.updateSessionList();
-            return;
-        }
-
-        const chatContainer = document.querySelector('.chat-container') || document.body;
-        
-        // Create sidebar HTML
-        const sidebarHTML = `
-            <div class="session-sidebar" style="width: 280px; background: #f8f9fa; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; z-index: 1000;">
-                <div class="sidebar-header" style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
-                    <button id="newChatBtn" style="width: 100%; background: #660000; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background-color 0.2s;" onmouseover="this.style.background='#550000'" onmouseout="this.style.background='#660000'">
-                        <i class="ri-add-line"></i>
-                        New Chat
-                    </button>
-                </div>
-                <div class="session-list" style="flex: 1; overflow-y: auto; padding: 8px;">
-                    <div id="sessionListContainer"></div>
-                </div>
-            </div>
-        `;
-
-        // Insert sidebar
-        chatContainer.insertAdjacentHTML('afterbegin', sidebarHTML);
-        
-        // Adjust main content to account for sidebar
-        const mainContent = chatContainer;
-        mainContent.style.marginLeft = '280px';
-
-        // Add event listener for new chat button
-        document.getElementById('newChatBtn').addEventListener('click', () => {
-            this.createNewSession();
-        });
-
+createSessionSidebar() {
+    // Check if sidebar already exists
+    if (document.querySelector('.session-sidebar')) {
         this.updateSessionList();
+        return;
     }
 
-    updateSessionList() {
-        const container = document.getElementById('sessionListContainer');
-        if (!container) return;
-
-        container.innerHTML = this.sessions.map(session => `
-            <div class="session-item ${session.session_id === this.currentSessionId ? 'active' : ''}" 
-                 data-session-id="${session.session_id}"
-                 style="padding: 12px; margin: 4px 0; border-radius: 8px; cursor: pointer; transition: all 0.2s; ${session.session_id === this.currentSessionId ? 'background: #660000; color: white;' : 'background: white;'}"
-                 onmouseover="if('${session.session_id}' !== '${this.currentSessionId}') this.style.background='#f3f4f6'"
-                 onmouseout="if('${session.session_id}' !== '${this.currentSessionId}') this.style.background='white'">
-                <div class="session-title" style="font-weight: 500; font-size: 14px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    ${session.title || 'New Chat'}
-                </div>
-                <div class="session-date" style="font-size: 12px; opacity: 0.7;">
-                    ${this.formatDate(session.created_at || session.updated_at)}
-                </div>
-                <div class="session-actions" style="margin-top: 8px; display: flex; gap: 8px;">
-                    <button class="delete-session-btn" data-session-id="${session.session_id}" 
-                            style="padding: 4px 8px; font-size: 11px; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: none; border-radius: 4px; cursor: pointer;"
-                            onclick="event.stopPropagation();">
-                        <i class="ri-delete-bin-line"></i>
-                    </button>
-                </div>
+    const chatContainer = document.querySelector('.chat-container') || document.body;
+    
+    // Create sidebar HTML
+    const sidebarHTML = `
+        <div class="session-sidebar" style="width: 280px; background: #f8f9fa; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; z-index: 1000;">
+            <div class="sidebar-header" style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                <a href="${homeURL}" class="logo" style="display: block; text-align: center; margin-bottom: 16px; font-family: 'Dancing Script', cursive; font-size: 2rem; font-weight: 700; color: #660000; text-decoration: none;">
+                    CerealsAI
+                </a>
+                <button id="newChatBtn" style="width: 100%; background: #660000; color: white; padding: 12px 16px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500;" onmouseover="this.style.background='#550000'" onmouseout="this.style.background='#660000'">
+                    <i class="ri-add-line"></i>
+                    New Chat
+                </button>
             </div>
-        `).join('');
+            <div class="session-list" style="flex: 1; overflow-y: auto; padding: 8px;">
+                <div id="sessionListContainer"></div>
+            </div>
+        </div>
+    `;
 
-        // Add click listeners
-        container.querySelectorAll('.session-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (!e.target.closest('.session-actions')) {
+    // Insert sidebar
+    chatContainer.insertAdjacentHTML('afterbegin', sidebarHTML);
+    
+    // Adjust main content to account for sidebar
+    const mainContent = chatContainer;
+    mainContent.style.marginLeft = '280px';
+
+    // Add event listener for new chat button with animation
+    document.getElementById('newChatBtn').addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        button.classList.add('bounce-animation');
+        setTimeout(() => {
+            button.classList.remove('bounce-animation');
+            this.createNewSession();
+        }, 600); // Match the animation duration
+    });
+
+    this.updateSessionList();
+}
+    updateSessionList() {
+    const container = document.getElementById('sessionListContainer');
+    if (!container) return;
+
+    container.innerHTML = this.sessions.map((session, index) => `
+        <div class="session-item session-fade-in ${session.session_id === this.currentSessionId ? 'active' : ''}" 
+             data-session-id="${session.session_id}"
+             style="padding: 12px; margin: 4px 0; border-radius: 8px; cursor: pointer; animation-delay: ${index * 0.1}s; ${session.session_id === this.currentSessionId ? 'background: #660000; color: white;' : 'background: white;'}"
+             onmouseover="if('${session.session_id}' !== '${this.currentSessionId}') this.style.background='#f3f4f6'"
+             onmouseout="if('${session.session_id}' !== '${this.currentSessionId}') this.style.background='white'">
+            <div class="session-title" style="font-weight: 500; font-size: 14px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${session.title || 'New Chat'}
+            </div>
+            <div class="session-date" style="font-size: 12px; opacity: 0.7;">
+                ${this.formatDate(session.created_at || session.updated_at)}
+            </div>
+            <div class="session-actions" style="margin-top: 8px; display: flex; gap: 8px;">
+                <button class="delete-session-btn" data-session-id="${session.session_id}" 
+                        style="padding: 4px 8px; font-size: 11px; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;"
+                        onclick="event.stopPropagation();">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    // Add click listeners with bounce animation
+    container.querySelectorAll('.session-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.closest('.session-actions')) {
+                item.classList.add('bounce-animation');
+                setTimeout(() => {
                     const sessionId = item.dataset.sessionId;
                     this.loadSession(sessionId);
-                }
-            });
+                }, 200);
+            }
         });
+    });
 
-        // Add delete listeners
-        container.querySelectorAll('.delete-session-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
+    // Add delete listeners with animation
+    container.querySelectorAll('.delete-session-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sessionItem = btn.closest('.session-item');
+            sessionItem.classList.add('deleting');
+            setTimeout(() => {
                 const sessionId = btn.dataset.sessionId;
                 this.deleteSession(sessionId);
-            });
+            }, 300);
         });
-    }
+    });
+}
 
     async loadChatSessions() {
         try {
@@ -269,55 +283,53 @@ class ChatSessionManager {
     }
 
     addMessage(text, isUser) {
-        const messageDiv = document.createElement("div");
-        messageDiv.className = `flex ${isUser ? "justify-end" : "justify-start"} mb-4`;
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `flex ${isUser ? "justify-end" : "justify-start"} mb-4 ${isUser ? 'message-slide-in-right' : 'message-slide-in-left'}`;
 
-        const messageBubble = document.createElement("div");
-        messageBubble.className = isUser
-            ? "bg-primary text-white rounded-lg rounded-tr-none py-2 px-4 max-w-[75%] whitespace-pre-wrap"
-            : "bg-gray-100 text-gray-900 rounded-lg rounded-tl-none py-2 px-4 max-w-[75%] message-bubble";
+    const messageBubble = document.createElement("div");
+    messageBubble.className = isUser
+        ? "bg-primary text-white rounded-lg rounded-tr-none py-2 px-4 max-w-[75%] whitespace-pre-wrap"
+        : "bg-gray-100 text-gray-900 rounded-lg rounded-tl-none py-2 px-4 max-w-[75%] message-bubble";
 
-        messageDiv.appendChild(messageBubble);
-        this.chatArea.appendChild(messageDiv);
-        this.scrollToBottom();
+    messageDiv.appendChild(messageBubble);
+    this.chatArea.appendChild(messageDiv);
+    this.scrollToBottom();
 
-        if (isUser) {
-            messageBubble.textContent = text;
-        } else if (text) {
-            // If we have initial text, display it
-            this.updateMessageContent(messageBubble, text);
-        }
-
-        return messageBubble;
+    if (isUser) {
+        messageBubble.textContent = text;
+    } else if (text) {
+        this.updateMessageContent(messageBubble, text);
     }
+
+    return messageBubble;
+}
 
     updateMessageContent(messageBubble, content) {
         messageBubble.innerHTML = this.parseMarkdown(content);
     }
 
     createLoadingIndicator() {
-        const loadingDiv = document.createElement("div");
-        loadingDiv.className = "loading-indicator";
-        loadingDiv.style.cssText = `
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            color: #666;
-            font-size: 14px;
-        `;
-        
-        const icon = document.createElement("i");
-        icon.className = "ri-loader-4-line animate-spin";
-        
-        const text = document.createElement("span");
-        text.textContent = "Thinking...";
-        
-        loadingDiv.appendChild(icon);
-        loadingDiv.appendChild(text);
-        
-        return loadingDiv;
+    const loadingDiv = document.createElement("div");
+    loadingDiv.className = "enhanced-loading";
+    
+    const loadingWave = document.createElement("div");
+    loadingWave.className = "loading-wave";
+    
+    for (let i = 0; i < 3; i++) {
+        const dot = document.createElement("div");
+        loadingWave.appendChild(dot);
     }
+    
+    const text = document.createElement("span");
+    text.textContent = "AI is thinking...";
+    text.style.marginLeft = "8px";
+    text.style.color = "#666";
+    
+    loadingDiv.appendChild(loadingWave);
+    loadingDiv.appendChild(text);
+    
+    return loadingDiv;
+}
 
     removeLoadingIndicator(messageBubble) {
         const loading = messageBubble.querySelector('.loading-indicator');
@@ -509,170 +521,3 @@ document.addEventListener("DOMContentLoaded", function () {
     // Initialize the enhanced chat manager
     window.chatManager = new ChatSessionManager();
 });
-
-// Add CSS styles for the session management with dark mode support
-const additionalStyles = `
-    <style>
-        .session-sidebar {
-            min-width: 260px;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-        
-        .session-item {
-            transition: all 0.2s ease;
-        }
-        
-        .session-item.active {
-            background: #660000 !important;
-            color: white !important;
-        }
-        
-        /* Dark mode styles for session sidebar */
-        body.dark-mode .session-sidebar {
-            background:rgb(29, 29, 29) !important;
-            border-right-color:rgb(31, 31, 31) !important;
-        }
-        
-        body.dark-mode .sidebar-header {
-            border-bottom-color:rgb(34, 34, 34) !important;
-        }
-        
-        body.dark-mode .session-item:not(.active) {
-            background:rgb(38, 38, 38) !important;
-            color: #f9fafb !important;
-        }
-        
-        body.dark-mode .session-item:not(.active):hover {
-            background:rgb(41, 41, 41) !important;
-        }
-        
-        body.dark-mode .session-date {
-            color: #d1d5db !important;
-        }
-        
-        body.dark-mode .delete-session-btn {
-            background: rgba(239, 68, 68, 0.2) !important;
-            color: #f87171 !important;
-        }
-        
-        body.dark-mode .delete-session-btn:hover {
-            background: rgba(239, 68, 68, 0.3) !important;
-        }
-        
-        /* Dark mode for message bubbles */
-        body.dark-mode .message-bubble {
-            background:rgb(39, 39, 39) !important;
-            color: #f9fafb !important;
-        }
-        
-        body.dark-mode .loading-indicator {
-            color: #d1d5db !important;
-        }
-        
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        .loading-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .chat-area {
-            overflow-y: auto;
-            padding: 16px;
-        }
-        
-        .message {
-            margin: 8px 0;
-        }
-        
-        /* Custom scrollbar for session list */
-        .session-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .session-list::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        
-        body.dark-mode .session-list::-webkit-scrollbar-track {
-            background: #1f2937;
-        }
-        
-        .session-list::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 3px;
-        }
-        
-        body.dark-mode .session-list::-webkit-scrollbar-thumb {
-            background: #6b7280;
-        }
-        
-        .session-list::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-        
-        body.dark-mode .session-list::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
-        }
-        
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            .session-sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-            
-            .session-sidebar.mobile-open {
-                transform: translateX(0);
-            }
-            
-            .chat-container {
-                margin-left: 0 !important;
-            }
-        }
-        
-        /* Ensure proper layout for chat container */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            transition: margin-left 0.3s ease;
-        }
-        
-        /* Button styling fixes */
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        /* Additional dark mode improvements */
-        body.dark-mode {
-            background-color:rgb(2, 3, 4);
-            color: #f9fafb;
-        }
-        
-        body.dark-mode .chat-container {
-            background-color:rgb(0, 0, 0);
-        }
-        
-        body.dark-mode .session-title {
-            color: inherit;
-        }
-    </style>
-`;
-
-// Add styles to document head
-if (document.head) {
-    document.head.insertAdjacentHTML('beforeend', additionalStyles);
-}

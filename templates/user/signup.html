@@ -3,236 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CerealsHub</title>
+<title>CerealsAI - Sign Up</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com/3.4.16"></script>
-<script>tailwind.config={theme:{extend:{colors:{primary:'#660000',secondary:'#818CF8'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
-<link rel="stylesheet" href="{{ url_for('static', filename='style/user/signup.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/user/auth.css') }}">
 </head>
-<body class="min-h-screen flex flex-col">
-<header class="bg-white shadow-sm">
-<div class="container mx-auto px-4 py-4 flex justify-between items-center">
-<a href="{{ url_for('home') }}" data-readdy="true" class="text-4xl text-primary" style="font-family: 'Dancing Script', cursive; font-weight: 999;">CerealsAI</a>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <a href="{{ url_for('home') }}" class="logo">CerealsAI</a>
+    </div>
+  </header>
 
+  <!-- Main Content -->
+  <main class="main-container">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          {% if error %}
+<div class="error-banner">
+  <i class="ri-error-warning-line"></i>
+  <span>{{ error }}</span>
 </div>
-</header>
+{% endif %}
+          <h1 class="auth-title">Create Account</h1>
+          <p class="auth-subtitle">Join CerealsAI today and get started!</p>
+        </div>
 
-<main class="flex-grow flex items-center justify-center py-12 px-4">
-<div class="w-full max-w-md">
-<div class="bg-white rounded-lg shadow-md p-8">
-<div class="text-center mb-8">
-<h1 class="text-2xl font-bold text-gray-900">Sign Up</h1>
-<p class="text-gray-600 mt-2">Create your account to get started!</p>
-</div>
+        <form method="POST" action="/signup" class="auth-form">
+          
+          <div class="input-group">
+            <input type="email" id="email" name="email" class="auth-input" placeholder="Email address" required>
+          </div>
+          
+          <div class="input-group password-group">
+            <input type="password" id="password" name="password" class="auth-input" placeholder="Password" required>
+            <div class="password-toggle" onclick="togglePassword('password', this)">
+              <i class="ri-eye-line"></i>
+            </div>
+          </div>
+          
+          <div class="input-group password-group">
+            <input type="password" id="confirm-password" name="confirm-password" class="auth-input" placeholder="Confirm Password" required>
+            <div class="password-toggle" onclick="togglePassword('confirm-password', this)">
+              <i class="ri-eye-line"></i>
+            </div>
+          </div>
+          
+          <div class="checkbox-container">
+            <div style="display: flex; align-items: center; flex: 1;">
+              <label class="custom-checkbox">
+                <input type="checkbox" id="terms" name="terms" required>
+                <span class="checkmark"></span>
+              </label>
+              <label for="terms" class="checkbox-label">
+                I agree to the <a href="#" class="terms-link">Terms & Conditions</a>
+              </label>
+            </div>
+          </div>
+          
+          <button type="submit" class="auth-btn primary-btn">
+            Create Account
+          </button>
+          
+          <div class="social-divider">
+            <span>or continue with</span>
+          </div>
+          
+          <div class="social-buttons">
+            <a href="#" class="social-btn">
+              <i class="ri-google-fill"></i>
+              Google
+            </a>
+            <a href="#" class="social-btn">
+              <i class="ri-github-fill"></i>
+              GitHub
+            </a>
+          </div>
+          
+          <div class="auth-switch">
+            Already have an account? 
+            <a href="{{ url_for('login') }}" class="switch-link">Sign In</a>
+          </div>
+        </form>
+      </div>
 
-<form method="POST" action="/signup"> <div class="mb-4">
-<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-<input type="email" id="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-sm" placeholder="Enter your email" required>
-</div>
+      <div class="back-link">
+        <a href="{{ url_for('pricing') }}" class="back-btn">
+          <i class="ri-arrow-left-line"></i>
+          Back to Pricing
+        </a>
+      </div>
+    </div>
+  </main>
 
-<div class="mb-4 relative">
-<label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-<input type="password" id="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-sm" placeholder="Enter your password" required>
-<div class="password-toggle w-5 h-5 flex items-center justify-center">
-<i class="ri-eye-line"></i>
-</div>
-</div>
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>© 2025 CerealsAI. All rights reserved.</p>
+      <div class="social-links">
+        <a href="#"><i class="ri-twitter-x-line"></i></a>
+        <a href="#"><i class="ri-linkedin-line"></i></a>
+        <a href="#"><i class="ri-github-line"></i></a>
+      </div>
+    </div>
+  </footer>
 
-<div class="mb-4 relative">
-<label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-<input type="password" id="confirm-password" name="confirm-password" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-sm" placeholder="Confirm your password" required>
-<div class="password-toggle w-5 h-5 flex items-center justify-center" data-target="confirm-password">
-<i class="ri-eye-line"></i>
-</div>
-</div>
-
-<div class="flex items-center justify-between mb-6">
-<div class="flex items-center">
-<label class="custom-checkbox">
-<input type="checkbox" id="terms" name="terms" required> <span class="checkmark"></span>
-</label>
-<label for="terms" class="ml-2 text-sm text-gray-700 cursor-pointer">I agree to the <a href="#" class="text-primary hover:text-primary/90 transition-colors">terms and conditions</a></label>
-</div>
-</div>
-
-<button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-button hover:bg-primary/90 transition-colors font-medium whitespace-nowrap">Sign Up</button>
-</form>
-
-<div class="mt-6">
-<div class="relative flex items-center justify-center">
-<div class="border-t border-gray-200 absolute w-full"></div>
-<div class="bg-white px-4 relative z-10 text-sm text-gray-500">or</div>
-</div>
-
-<div class="mt-6 grid grid-cols-2 gap-3">
-<a href="#" class="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-button hover:bg-gray-50 transition-colors whitespace-nowrap">
-<div class="w-5 h-5 flex items-center justify-center mr-2">
-<i class="ri-google-fill text-[#EA4335]"></i>
-</div>
-<span class="text-sm font-medium text-gray-700">Google</span>
-</a>
-<a href="#" class="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-button hover:bg-gray-50 transition-colors whitespace-nowrap">
-<div class="w-5 h-5 flex items-center justify-center mr-2">
-<i class="ri-github-fill"></i>
-</div>
-<span class="text-sm font-medium text-gray-700">GitHub</span>
-</a>
-</div>
-</div>
-
-<div class="text-center mt-6">
-<p class="text-gray-600 text-sm">
-Already have an account? 
-<a href="{{ url_for('login') }}" class="font-medium text-primary hover:text-primary/90 transition-colors">Sign in</a>
-</p>
-</div>
-</div>
-
-<div class="mt-8 text-center">
-<a href="{{ url_for('pricing') }}" data-readdy="true" class="text-sm text-gray-600 hover:text-primary transition-colors flex items-center justify-center">
-<div class="w-4 h-4 flex items-center justify-center mr-1">
-<i class="ri-arrow-left-line"></i>
-</div>
-Back to Pricing
-</a>
-</div>
-</div>
-</main>
-
-<footer class="bg-white border-t border-gray-200 py-6">
-<div class="container mx-auto px-4">
-<div class="flex flex-col md:flex-row justify-between items-center">
-<p class="text-gray-500 text-sm mb-4 md:mb-0">© 2025 AI Chat Platform. All rights reserved.</p>
-<div class="flex space-x-4">
-<a href="#" class="text-gray-500 hover:text-gray-700 transition-colors">
-<div class="w-5 h-5 flex items-center justify-center">
-<i class="ri-twitter-x-line"></i>
-</div>
-</a>
-<a href="#" class="text-gray-500 hover:text-gray-700 transition-colors">
-<div class="w-5 h-5 flex items-center justify-center">
-<i class="ri-linkedin-line"></i>
-</div>
-</a>
-<a href="#" class="text-gray-500 hover:text-gray-700 transition-colors">
-<div class="w-5 h-5 flex items-center justify-center">
-<i class="ri-github-line"></i>
-</div>
-</a>
-</div>
-</div>
-</div>
-</footer>
-
-<script id="password-toggle-script">
-document.addEventListener('DOMContentLoaded', function() {
-  const passwordToggles = document.querySelectorAll('.password-toggle');
-  
-  passwordToggles.forEach(toggle => {
-    toggle.addEventListener('click', function() {
-      const targetId = this.dataset.target || 'password'; // Default to 'password' if no data-target
-      const passwordInput = document.getElementById(targetId);
-      
-      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-      passwordInput.setAttribute('type', type);
-      
-      // Toggle icon
-      const icon = toggle.querySelector('i');
-      if (type === 'password') {
-        icon.classList.remove('ri-eye-off-line');
-        icon.classList.add('ri-eye-line');
-      } else {
-        icon.classList.remove('ri-eye-line');
-        icon.classList.add('ri-eye-off-line');
-      }
-    });
-  });
-});
-</script>
-
-<script id="form-validation-script">
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.querySelector('form');
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-  const confirmPasswordInput = document.getElementById('confirm-password');
-  const termsCheckbox = document.getElementById('terms');
-  
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    let isValid = true;
-    
-    // Simple email validation
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(emailInput.value)) {
-      emailInput.classList.add('border-red-500');
-      isValid = false;
-    } else {
-      emailInput.classList.remove('border-red-500');
-    }
-    
-    // Password validation (at least 6 characters)
-    if (passwordInput.value.length < 6) {
-      passwordInput.classList.add('border-red-500');
-      isValid = false;
-    } else {
-      passwordInput.classList.remove('border-red-500');
-    }
-
-    // Confirm password validation
-    if (confirmPasswordInput.value !== passwordInput.value || confirmPasswordInput.value.length < 6) {
-      confirmPasswordInput.classList.add('border-red-500');
-      isValid = false;
-    } else {
-      confirmPasswordInput.classList.remove('border-red-500');
-    }
-
-    // Terms and conditions checkbox validation
-    if (!termsCheckbox.checked) {
-      termsCheckbox.closest('.custom-checkbox').querySelector('.checkmark').classList.add('border-red-500');
-      isValid = false;
-    } else {
-      termsCheckbox.closest('.custom-checkbox').querySelector('.checkmark').classList.remove('border-red-500');
-    }
-    
-    if (isValid) {
-      // Here you would typically send the form data to your server
-      console.log('Form submitted successfully');
-      // Simulate loading state
-      const submitButton = form.querySelector('button[type="submit"]');
-      submitButton.disabled = true;
-      submitButton.innerHTML = '<span class="flex items-center justify-center"><svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Signing up...</span>';
-      
-      // Submit the form programmatically after validation passes
-      // Important: Comment out the line below if you want the default form submission to happen
-      // e.preventDefault(); 
-      form.submit(); // This line will submit the form
-    }
-  });
-  
-  // Clear validation styling on input
-  emailInput.addEventListener('input', function() {
-    this.classList.remove('border-red-500');
-  });
-  
-  passwordInput.addEventListener('input', function() {
-    this.classList.remove('border-red-500');
-  });
-
-  confirmPasswordInput.addEventListener('input', function() {
-    this.classList.remove('border-red-500');
-  });
-
-  termsCheckbox.addEventListener('change', function() {
-    this.closest('.custom-checkbox').querySelector('.checkmark').classList.remove('border-red-500');
-  });
-});
-</script>
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
 </html>

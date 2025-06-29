@@ -23,6 +23,9 @@
     />
     <link rel="stylesheet" href="{{ url_for('static', filename='style/main/chat.css') }}">
     <script>
+    const homeURL = "{{ url_for('home') }}";
+    </script>
+    <script>
       tailwind.config = {
         theme: {
           extend: {
@@ -46,12 +49,13 @@
   </head>
   <body>
     <div class="chat-container">
-      <div class="flex justify-between items-center p-4">
-        <a href="{{ url_for('home') }}" data-readdy="true" class="text-4xl text-primary" style="font-family: 'Dancing Script', cursive; font-weight: 999;">CerealsAI</a>
+      <div class="flex justify-between items-center p-4" style="margin-left: 280px;">
+        <div style="flex: 1;"></div>
+
         <div
-          id="userProfileBtn"
-          class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full cursor-pointer border-2 border-primary hover:border-primary/80 transition-all duration-200"
-        >
+      id="userProfileBtn"
+      class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full cursor-pointer border-2 border-primary hover:border-primary/80 transition-all duration-200"
+    >
           <i class="ri-user-line ri-lg text-primary"></i>
         </div>
       </div>

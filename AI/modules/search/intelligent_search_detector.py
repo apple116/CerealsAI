@@ -1,6 +1,5 @@
 # intelligent_search_detector.py
-# intelligent_search_detector.py
-# Simplified version without external dependencies (no spacy/nltk required)
+# Fixed version with better personal question detection
 
 import re
 from typing import Dict, List, Tuple, Optional
@@ -24,22 +23,27 @@ class IntelligentSearchDetector:
         if explicit_search['is_search']:
             return True, "explicit_request", explicit_search
         
-        # Step 2: Personal questions (should NOT search)
+        # Step 2: Personal questions and greetings (should NOT search)
         personal_question = self._check_personal_questions(prompt)
         if personal_question['is_personal']:
             return False, "personal_question", personal_question
         
-        # Step 3: Current events and time-sensitive queries
+        # Step 3: Greetings and casual conversation (should NOT search)
+        casual_conversation = self._check_casual_conversation(prompt)
+        if casual_conversation['is_casual']:
+            return False, "casual_conversation", casual_conversation
+        
+        # Step 4: Current events and time-sensitive queries
         current_events = self._check_current_events(prompt)
         if current_events['is_current']:
             return True, "current_events", current_events
         
-        # Step 4: Factual information requests
+        # Step 5: Factual information requests
         factual_info = self._check_factual_requests(prompt)
         if factual_info['needs_facts']:
             return True, "factual_information", factual_info
         
-        # Step 5: Context-based decisions
+        # Step 6: Context-based decisions
         context_decision = self._analyze_context(prompt, user_context)
         if context_decision['has_context']:
             return context_decision['should_search'], "context_based", context_decision
@@ -136,6 +140,53 @@ class IntelligentSearchDetector:
         
         return {'is_personal': False}
     
+    def _check_casual_conversation(self, prompt: str) -> Dict:
+        """Check for greetings and casual conversation that should not trigger search"""
+        
+        # Common greetings and casual phrases
+        casual_patterns = [
+            r"^(hi|hello|hey|sup|wassup|what's up)(\s|$|!|\?)",
+            r"^(good\s+(morning|afternoon|evening|night))(\s|$|!|\?)",
+            r"^(how\s+(are\s+)?(you|ya|u)\s+(doing|going|been))(\s|$|!|\?)",
+            r"^(how('s| is)\s+(it\s+)?going)(\s|$|!|\?)",
+            r"^(how('s| is)\s+your\s+(day|morning|evening|night))(\s|$|!|\?)",
+            r"^(what('s| is)\s+up)(\s|$|!|\?)",
+            r"^(how\s+you\s+doing)(\s|$|!|\?)",
+            r"^(how\s+are\s+things)(\s|$|!|\?)",
+            r"^(how\s+have\s+you\s+been)(\s|$|!|\?)",
+            r"^(nice\s+to\s+(meet|see)\s+you)(\s|$|!|\?)",
+            r"^(thanks?|thank\s+you|ty)(\s|$|!|\?)",
+            r"^(you('re| are)\s+welcome|no\s+problem|np)(\s|$|!|\?)",
+            r"^(bye|goodbye|see\s+ya|cya|ttyl)(\s|$|!|\?)",
+            r"^(good\s+luck|have\s+a\s+good\s+(day|time))(\s|$|!|\?)",
+            r"^(take\s+care|be\s+safe)(\s|$|!|\?)"
+        ]
+        
+        # Simple conversational starters
+        conversation_starters = [
+            r"^(tell\s+me\s+about\s+yourself)(\s|$|!|\?)",
+            r"^(who\s+are\s+you)(\s|$|!|\?)",
+            r"^(what('s| is)\s+your\s+name)(\s|$|!|\?)",
+            r"^(nice\s+to\s+meet\s+you)(\s|$|!|\?)",
+            r"^(how\s+old\s+are\s+you)(\s|$|!|\?)",
+            r"^(where\s+are\s+you\s+from)(\s|$|!|\?)"
+        ]
+        
+        lower_prompt = prompt.lower().strip()
+        
+        # Check casual patterns
+        all_patterns = casual_patterns + conversation_starters
+        for pattern in all_patterns:
+            if re.search(pattern, lower_prompt):
+                return {
+                    'is_casual': True,
+                    'confidence': 0.95,
+                    'type': 'greeting_or_casual',
+                    'detected_pattern': pattern
+                }
+        
+        return {'is_casual': False}
+    
     def _check_current_events(self, prompt: str) -> Dict:
         """Check for current events and time-sensitive queries"""
         
@@ -196,30 +247,37 @@ class IntelligentSearchDetector:
     def _check_factual_requests(self, prompt: str) -> Dict:
         """Check for requests that need factual information"""
         
-        # Question words that often indicate factual requests
+        # More precise question patterns that exclude greetings and personal questions
         factual_question_patterns = [
-            r"^(what|when|where|who|why|how)\s+(?!do\s+you|are\s+you|would\s+you)",
-            r"tell\s+me\s+about\s+(?!your|you)",
-            r"explain\s+(?!your|how\s+you)",
-            r"define\s+",
-            r"what\s+is\s+(?!your)",
-            r"how\s+does\s+(?!it\s+feel|that\s+make\s+you)",
-            r"when\s+did\s+",
-            r"where\s+is\s+",
-            r"who\s+is\s+(?!your)",
-            r"how\s+to\s+(?!make\s+you|be\s+you)",
-            r"what\s+are\s+the\s+(?!your)",
-            r"list\s+of\s+",
-            r"examples\s+of\s+"
+            r"^what\s+is\s+(?!your|up|happening|new|going|wrong)\w+",  # "what is X" but not "what is up/your/etc"
+            r"^when\s+(did|was|will|does|is)\s+",  # "when did/was/will/does/is"
+            r"^where\s+(is|was|can|does|did)\s+(?!you)",  # "where is/was" but not "where are you"
+            r"^who\s+(is|was|created|invented|discovered)\s+",  # "who is/was/created"
+            r"^why\s+(does|did|is|was|do)\s+",  # "why does/did/is"
+            r"^how\s+(does|did|can|to)\s+(?!you)",  # "how does/did/can/to" but not "how you"
+            r"^how\s+many\s+",  # "how many"
+            r"^how\s+much\s+",  # "how much" 
+            r"^how\s+long\s+",  # "how long"
+            r"^how\s+often\s+",  # "how often"
+            r"tell\s+me\s+about\s+(?!your|you)\w+",  # "tell me about X" but not about you
+            r"explain\s+(?!your|how\s+you)\w+",  # "explain X" but not "explain your"
+            r"define\s+\w+",  # "define word"
+            r"what\s+are\s+the\s+(?!you|your)\w+",  # "what are the X" but not about you
+            r"list\s+of\s+\w+",  # "list of X"
+            r"examples\s+of\s+\w+"  # "examples of X"
         ]
         
-        # Academic/technical topics that usually need facts
+        # Academic/technical/factual topics that usually need facts
         factual_topics = [
             "definition", "history", "science", "technology", "medicine",
             "law", "mathematics", "physics", "chemistry", "biology",
             "geography", "statistics", "data", "research", "study",
             "theory", "concept", "principle", "formula", "equation",
-            "university", "college", "education", "academic", "scholarly"
+            "university", "college", "education", "academic", "scholarly",
+            "algorithm", "programming", "computer", "software", "hardware",
+            "anatomy", "disease", "symptom", "treatment", "diagnosis",
+            "country", "city", "population", "economy", "GDP", "culture",
+            "language", "literature", "author", "book", "philosophy"
         ]
         
         # Avoid searching for common knowledge/philosophical questions
@@ -244,7 +302,8 @@ class IntelligentSearchDetector:
                 # Calculate basic specificity (specific terms, numbers, etc.)
                 specificity_score = self._calculate_specificity(prompt)
                 
-                if specificity_score > 0.3 or has_factual_topic:
+                # Require higher confidence for factual requests
+                if specificity_score > 0.4 or has_factual_topic or len(prompt.split()) > 5:
                     return {
                         'needs_facts': True,
                         'confidence': 0.7 + (specificity_score * 0.2),
