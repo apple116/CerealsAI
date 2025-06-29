@@ -529,21 +529,21 @@ const additionalStyles = `
         
         /* Dark mode styles for session sidebar */
         body.dark-mode .session-sidebar {
-            background: #1f2937 !important;
-            border-right-color: #374151 !important;
+            background:rgb(29, 29, 29) !important;
+            border-right-color:rgb(31, 31, 31) !important;
         }
         
         body.dark-mode .sidebar-header {
-            border-bottom-color: #374151 !important;
+            border-bottom-color:rgb(34, 34, 34) !important;
         }
         
         body.dark-mode .session-item:not(.active) {
-            background: #374151 !important;
+            background:rgb(38, 38, 38) !important;
             color: #f9fafb !important;
         }
         
         body.dark-mode .session-item:not(.active):hover {
-            background: #4b5563 !important;
+            background:rgb(41, 41, 41) !important;
         }
         
         body.dark-mode .session-date {
@@ -561,7 +561,7 @@ const additionalStyles = `
         
         /* Dark mode for message bubbles */
         body.dark-mode .message-bubble {
-            background: #374151 !important;
+            background:rgb(39, 39, 39) !important;
             color: #f9fafb !important;
         }
         
