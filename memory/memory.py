@@ -16,7 +16,7 @@ def get_user_files(user_email):
     pref_file = os.path.join(user_dir, 'data.json')
     return user_dir, memory_file, summary_file, pref_file
 
-def get_real_time_files(user_email): #
+def get_real_time_files(user_email): 
     """Get file paths for a specific user's real-time search memory""" #
     user_dir = os.path.join(MEMORY_BASE_DIR, user_email.replace('@', '_at_').replace('.', '_dot_')) #
     real_time_file = os.path.join(user_dir, 'real_time.json') #
